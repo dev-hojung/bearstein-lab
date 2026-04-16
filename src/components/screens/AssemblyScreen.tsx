@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, type PanInfo } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, type PanInfo } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { ASM_POS, ASM_Z, BACKGROUNDS, CAT_LABEL, type Part } from '@/lib/parts-data';
 import { useLabStore, type Offset } from '@/lib/store';
@@ -24,6 +24,8 @@ export default function AssemblyScreen() {
   const [downloading, setDownloading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  /** Mobile-only floating pad state: which pad is currently expanded */
+  const [activePad, setActivePad] = useState<'move' | 'size' | null>(null);
 
   // Auto-select first part when cart changes (for nudge controls)
   useEffect(() => {
@@ -105,7 +107,7 @@ export default function AssemblyScreen() {
       />
       <div className="scan-ov pointer-events-none absolute inset-0 z-[1]" />
 
-      <div className="absolute inset-0 z-[2] flex flex-col p-3">
+      <div className="lab-scroll absolute inset-0 z-[2] flex flex-col overflow-y-auto p-3 lg:overflow-hidden">
         <header className="mb-2.5 flex flex-shrink-0 flex-wrap items-center gap-2">
           <BackButton />
           <h1
@@ -156,7 +158,7 @@ export default function AssemblyScreen() {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
+        <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1 lg:flex-row lg:overflow-hidden">
           {/* ── Stage ── */}
           <div className="flex flex-shrink-0 flex-col items-center gap-3">
             {/* Outer wrapper provides the visible frame; capture target (inner) is transparent */}
@@ -194,9 +196,9 @@ export default function AssemblyScreen() {
               </div>
             </div>
 
-            {/* ── Nudge & scale controls (1px / 1% precision) ── */}
+            {/* ── Nudge & scale controls (desktop only — mobile uses floating FABs below) ── */}
             {!previewMode && selectedPart && (
-              <div className="flex flex-col items-center gap-1.5 rounded-md border border-[rgba(255,100,180,0.25)] bg-[rgba(20,0,25,0.85)] p-2 backdrop-blur-sm">
+              <div className="hidden flex-col items-center gap-1.5 rounded-md border border-[rgba(255,100,180,0.25)] bg-[rgba(20,0,25,0.85)] p-2 backdrop-blur-sm lg:flex">
                 <div className="font-[family-name:var(--font-josefin)] text-[0.62rem] font-light tracking-[0.12em] text-[#FFB0D4]">
                   Adjust: <span className="text-[#FFE0F0]">{selectedPart.name}</span>
                   {selectedOffset &&
@@ -266,7 +268,7 @@ export default function AssemblyScreen() {
           </div>
 
           {/* ── Info panel ── */}
-          <div className="lab-scroll flex flex-1 flex-col gap-2 overflow-y-auto p-1">
+          <div className="lab-scroll flex flex-col gap-2 p-1 lg:flex-1 lg:overflow-y-auto">
             {cart.length === 0 ? (
               <div className="px-3 py-8 text-center font-[family-name:var(--font-josefin)] text-xs font-extralight leading-8 tracking-[0.12em] text-[rgba(255,150,200,0.6)]">
                 No parts selected.
@@ -325,7 +327,178 @@ export default function AssemblyScreen() {
           </div>
         </div>
       </div>
+
+      {/* ── Mobile-only floating control pads ── */}
+      {!previewMode && selectedPart && (
+        <div className="lg:hidden">
+          {/* Expanded pad (appears above FABs when active) */}
+          <AnimatePresence>
+            {activePad && (
+              <motion.div
+                key={activePad}
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="fixed bottom-[72px] left-1/2 z-40 -translate-x-1/2"
+              >
+                <div
+                  className="flex min-w-[230px] flex-col items-center gap-2 rounded-lg border border-[rgba(255,100,180,0.4)] bg-[rgba(20,0,25,0.95)] p-3 backdrop-blur-md"
+                  style={{ boxShadow: '0 0 20px rgba(255,100,180,0.25), 0 8px 24px rgba(0,0,0,0.6)' }}
+                >
+                  <div className="flex w-full items-center justify-between border-b border-[rgba(255,100,180,0.2)] pb-1.5">
+                    <span className="font-[family-name:var(--font-josefin)] text-[0.62rem] tracking-[0.15em] text-[#FFB0D4]">
+                      {activePad === 'move' ? '✋ MOVE' : '⤢ SIZE'}
+                      <span className="ml-2 text-[#FFE0F0]">{selectedPart.name}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActivePad(null)}
+                      aria-label="Close pad"
+                      className="text-[rgba(255,150,200,0.6)] transition hover:text-[#FFE0F0]"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {activePad === 'move' ? (
+                    <>
+                      {selectedOffset && (selectedOffset.x !== 0 || selectedOffset.y !== 0) && (
+                        <div className="font-[family-name:var(--font-josefin)] text-[0.6rem] tracking-[0.1em] text-[#A0FFB8]">
+                          pos({selectedOffset.x}, {selectedOffset.y})
+                        </div>
+                      )}
+                      <div className="grid grid-cols-3 gap-2">
+                        <span />
+                        <NudgeBtn label="▲" onClick={() => nudge(0, -1)} aria="Up 1px" big />
+                        <span />
+                        <NudgeBtn label="◀" onClick={() => nudge(-1, 0)} aria="Left 1px" big />
+                        <NudgeBtn
+                          label="●"
+                          onClick={() => selectedId && setPartOffset(selectedId, { x: 0, y: 0 })}
+                          aria="Center"
+                          big
+                        />
+                        <NudgeBtn label="▶" onClick={() => nudge(1, 0)} aria="Right 1px" big />
+                        <span />
+                        <NudgeBtn label="▼" onClick={() => nudge(0, 1)} aria="Down 1px" big />
+                        <span />
+                      </div>
+                      <div className="flex gap-1.5">
+                        <NudgeBtn label="◀10" onClick={() => nudge(-10, 0)} aria="Left 10" small />
+                        <NudgeBtn label="▲10" onClick={() => nudge(0, -10)} aria="Up 10" small />
+                        <NudgeBtn label="▼10" onClick={() => nudge(0, 10)} aria="Down 10" small />
+                        <NudgeBtn label="10▶" onClick={() => nudge(10, 0)} aria="Right 10" small />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Large value display */}
+                      <div
+                        className="font-[family-name:var(--font-cormorant)] italic text-3xl font-medium leading-none tabular-nums text-[#FFE0F0]"
+                        style={{ textShadow: '0 0 14px rgba(255,100,180,0.65)' }}
+                      >
+                        {(selectedScale * 100).toFixed(0)}
+                        <span className="ml-0.5 text-xl text-[#FF9FD4]">%</span>
+                      </div>
+
+                      {/* Slider 30% ~ 300% */}
+                      <div className="flex w-full items-center gap-2 px-1">
+                        <span className="font-[family-name:var(--font-josefin)] text-[0.55rem] tracking-[0.08em] text-[rgba(255,150,200,0.55)]">
+                          30
+                        </span>
+                        <input
+                          type="range"
+                          min={0.3}
+                          max={3}
+                          step={0.01}
+                          value={selectedScale}
+                          onChange={(e) =>
+                            selectedId &&
+                            setPartScale(
+                              selectedId,
+                              Math.round(Number(e.target.value) * 100) / 100,
+                            )
+                          }
+                          className="lab-slider flex-1"
+                          aria-label="Scale slider"
+                        />
+                        <span className="font-[family-name:var(--font-josefin)] text-[0.55rem] tracking-[0.08em] text-[rgba(255,150,200,0.55)]">
+                          300
+                        </span>
+                      </div>
+
+                      {/* Fine controls */}
+                      <div className="flex items-center gap-1.5">
+                        <NudgeBtn label="−5" onClick={() => adjustScale(-0.05)} aria="Shrink 5%" small />
+                        <NudgeBtn label="−1" onClick={() => adjustScale(-0.01)} aria="Shrink 1%" small />
+                        <button
+                          type="button"
+                          onClick={() => selectedId && setPartScale(selectedId, 1)}
+                          className="h-7 cursor-pointer rounded border border-[rgba(255,100,170,0.5)] bg-[rgba(255,30,130,0.15)] px-2 font-[family-name:var(--font-josefin)] text-[0.6rem] tracking-[0.1em] text-[#FFB0D4] transition hover:bg-[rgba(255,30,130,0.35)] hover:text-[#FFE0F0]"
+                          aria-label="Reset to 100%"
+                        >
+                          ↺ 100%
+                        </button>
+                        <NudgeBtn label="+1" onClick={() => adjustScale(0.01)} aria="Grow 1%" small />
+                        <NudgeBtn label="+5" onClick={() => adjustScale(0.05)} aria="Grow 5%" small />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* FAB row (fixed at bottom-center) */}
+          <div className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 gap-2">
+            <FabButton
+              icon="✋"
+              label="Move"
+              active={activePad === 'move'}
+              onClick={() => setActivePad((p) => (p === 'move' ? null : 'move'))}
+            />
+            <FabButton
+              icon="⤢"
+              label="Size"
+              active={activePad === 'size'}
+              onClick={() => setActivePad((p) => (p === 'size' ? null : 'size'))}
+            />
+          </div>
+        </div>
+      )}
     </motion.section>
+  );
+}
+
+// ── FAB button (mobile floating control trigger) ──
+function FabButton({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
+      className={[
+        'flex h-12 items-center gap-1.5 rounded-full border px-4 font-[family-name:var(--font-josefin)] text-[0.68rem] tracking-[0.12em] backdrop-blur-md transition',
+        active
+          ? 'border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] text-[#FFE0F0] shadow-[0_0_20px_rgba(255,30,140,0.55)]'
+          : 'border-[rgba(255,100,180,0.45)] bg-[rgba(20,0,25,0.85)] text-[#FFB0D4] shadow-[0_4px_12px_rgba(0,0,0,0.5),0_0_10px_rgba(255,100,180,0.15)] hover:text-[#FFE0F0]',
+      ].join(' ')}
+    >
+      <span className="text-sm">{icon}</span>
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -335,11 +508,13 @@ function NudgeBtn({
   onClick,
   aria,
   small,
+  big,
 }: {
   label: string;
   onClick: () => void;
   aria: string;
   small?: boolean;
+  big?: boolean;
 }) {
   return (
     <button
@@ -348,9 +523,11 @@ function NudgeBtn({
       aria-label={aria}
       className={[
         'cursor-pointer select-none rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] font-[family-name:var(--font-josefin)] text-[#FFB0D4] transition hover:bg-[rgba(255,30,130,0.35)] hover:text-[#FFE0F0] active:bg-[rgba(255,30,130,0.5)]',
-        small
-          ? 'px-2 py-0.5 text-[0.55rem] tracking-[0.08em]'
-          : 'h-7 w-7 text-[0.7rem]',
+        big
+          ? 'h-11 w-11 text-base'
+          : small
+            ? 'px-2 py-0.5 text-[0.55rem] tracking-[0.08em]'
+            : 'h-7 w-7 text-[0.7rem]',
       ].join(' ')}
     >
       {label}

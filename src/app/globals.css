@@ -87,6 +87,53 @@ html, body {
   );
 }
 
+/* Neon range slider (size control etc.) */
+.lab-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  height: 22px;
+}
+.lab-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(to right, rgba(255, 100, 180, 0.2), rgba(255, 100, 180, 0.55));
+  border-radius: 2px;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+}
+.lab-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FF6EB4, #CC1166);
+  border: 2px solid #FFE0F0;
+  box-shadow: 0 0 12px rgba(255, 30, 140, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+  transition: transform 0.12s;
+}
+.lab-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+.lab-slider::-moz-range-track {
+  height: 4px;
+  background: rgba(255, 100, 180, 0.4);
+  border-radius: 2px;
+}
+.lab-slider::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #FF6EB4, #CC1166);
+  border: 2px solid #FFE0F0;
+  box-shadow: 0 0 12px rgba(255, 30, 140, 0.8);
+  cursor: grab;
+}
+
 /* Fly-to-cart animation */
 .fly-clone {
   position: fixed;
