@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS public.allowed_phones (
   phone        TEXT        PRIMARY KEY,    -- Normalized: 01012345678 (digits only)
   label        TEXT,                       -- Optional memo ("엄마", "친구 A")
-  session_days INTEGER     NOT NULL DEFAULT 1,   -- Session duration in days (1~365)
+  session_minutes INTEGER  NOT NULL DEFAULT 1440, -- Session duration in minutes (1 min ~ 365 days)
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_seen_at TIMESTAMPTZ
 );

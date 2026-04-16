@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { getIronSession } from 'iron-session';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
-import { sessionOptionsWithDays, type LabSession, normalizePhone, isValidKoreanMobile } from '@/lib/session';
+import { sessionOptionsWithMinutes, type LabSession, normalizePhone, isValidKoreanMobile } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
   const { phone: raw } = await req.json().catch(() => ({ phone: '' }));
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('allowed_phones')
-    .select('phone,session_days')
+    .select('phone,session_minutes')
     .eq('phone', phone)
     .maybeSingle();
 
@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     .update({ last_seen_at: new Date().toISOString() })
     .eq('phone', phone);
 
-  const days = data.session_days ?? 1;
-  const session = await getIronSession<LabSession>(await cookies(), sessionOptionsWithDays(days));
+  const minutes = data.session_minutes ?? 1440;
+  const session = await getIronSession<LabSession>(await cookies(), sessionOptionsWithMinutes(minutes));
   session.phone = phone;
   session.issuedAt = Date.now();
   await session.save();

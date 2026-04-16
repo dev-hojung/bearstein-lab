@@ -8,10 +8,20 @@ import { formatPhone, formatPhoneInput } from '@/lib/session';
 type Phone = {
   phone: string;
   label: string | null;
-  session_days: number;
+  session_minutes: number;
   created_at: string;
   last_seen_at: string | null;
 };
+
+const UNIT_TO_MINUTES = { min: 1, hour: 60, day: 60 * 24 } as const;
+type Unit = keyof typeof UNIT_TO_MINUTES;
+const UNIT_LABEL: Record<Unit, string> = { min: '분', hour: '시간', day: '일' };
+
+function formatDuration(minutes: number): string {
+  if (minutes % (60 * 24) === 0) return `${minutes / (60 * 24)}일`;
+  if (minutes % 60 === 0) return `${minutes / 60}시간`;
+  return `${minutes}분`;
+}
 type Part = { id: string; name: string; cat: string; url: string };
 
 export default function AdminPage() {
@@ -112,17 +122,19 @@ function PhonePanel({
 }) {
   const [phone, setPhone] = useState('');
   const [label, setLabel] = useState('');
-  const [sessionDays, setSessionDays] = useState(1);
+  const [durationValue, setDurationValue] = useState(1);
+  const [durationUnit, setDurationUnit] = useState<Unit>('day');
   const [submitting, setSubmitting] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    const sessionMinutes = durationValue * UNIT_TO_MINUTES[durationUnit];
     try {
       const res = await fetch('/api/admin/phones', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ phone, label: label || null, session_days: sessionDays }),
+        body: JSON.stringify({ phone, label: label || null, session_minutes: sessionMinutes }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -178,12 +190,19 @@ function PhonePanel({
             <input
               type="number"
               min={1}
-              max={365}
-              value={sessionDays}
-              onChange={(e) => setSessionDays(Number(e.target.value) || 1)}
-              className="w-16 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-2 py-2 text-center font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+              value={durationValue}
+              onChange={(e) => setDurationValue(Math.max(1, Number(e.target.value) || 1))}
+              className="w-14 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-2 py-2 text-center font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
             />
-            <span className="font-[family-name:var(--font-josefin)] text-[0.6rem] tracking-[0.1em] text-[rgba(255,150,200,0.6)]">일</span>
+            <select
+              value={durationUnit}
+              onChange={(e) => setDurationUnit(e.target.value as Unit)}
+              className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-1.5 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            >
+              <option value="min">분</option>
+              <option value="hour">시간</option>
+              <option value="day">일</option>
+            </select>
           </div>
           <button
             type="submit"
@@ -212,7 +231,7 @@ function PhonePanel({
                 </div>
                 <div className="font-[family-name:var(--font-josefin)] text-[0.62rem] tracking-[0.1em] text-[rgba(255,150,200,0.55)]">
                   {p.label ?? '—'}
-                  <span className="ml-2">· {p.session_days}일</span>
+                  <span className="ml-2">· {formatDuration(p.session_minutes)}</span>
                   {p.last_seen_at && (
                     <span className="ml-2 text-[#A0FFB8]">
                       · last: {new Date(p.last_seen_at).toLocaleDateString()}

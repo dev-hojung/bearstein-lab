@@ -11,6 +11,7 @@ import AssemblyScreen from '@/components/screens/AssemblyScreen';
 import CartWidget from '@/components/ui/CartWidget';
 import CartPanel from '@/components/ui/CartPanel';
 import Toast from '@/components/ui/Toast';
+import SessionGuard from '@/components/ui/SessionGuard';
 
 const EMPTY: Record<Category, Part[]> = { head: [], body: [], arm: [], leg: [] };
 
@@ -44,6 +45,7 @@ export default function Page() {
       <CartWidget />
       <CartPanel />
       <Toast />
+      <SessionGuard />
     </main>
   );
 }

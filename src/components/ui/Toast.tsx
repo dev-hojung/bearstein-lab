@@ -19,14 +19,16 @@ export default function Toast() {
       className="pointer-events-none fixed inset-x-0 bottom-24 z-[9999] flex justify-center px-4"
       aria-live="polite"
     >
-      <AnimatePresence>
+      {/* mode="wait" ensures old toast fully exits before new one enters,
+          preventing the "small→large" overlap artifact */}
+      <AnimatePresence mode="wait">
         {toast && (
           <motion.div
             key={toast}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.22 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
             className="rounded border border-[#FF80C0] bg-[#CC1166] px-4 py-1.5 font-[family-name:var(--font-josefin)] text-xs tracking-widest text-[#FFE0F0] shadow-lg"
           >
             {toast}

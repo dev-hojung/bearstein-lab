@@ -6,9 +6,9 @@ export type LabSession = {
   issuedAt?: number;   // ms epoch
 };
 
-const ONE_DAY = 60 * 60 * 24;
+const ONE_DAY_IN_MINUTES = 60 * 24; // 1440 minutes
 
-/** Base session options (default 1 day). Use `sessionOptionsWithDays()` for custom duration. */
+/** Base session options (default 1 day = 1440 minutes). */
 export const sessionOptions: SessionOptions = {
   cookieName: 'bearstein_session',
   password: process.env.SESSION_SECRET || 'dev-only-insecure-secret-please-replace-in-prod-0123456789',
@@ -16,18 +16,23 @@ export const sessionOptions: SessionOptions = {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',
-    maxAge: ONE_DAY,
+    maxAge: ONE_DAY_IN_MINUTES * 60, // seconds
     path: '/',
   },
 };
 
-/** Returns session options with a custom maxAge in days. */
-export function sessionOptionsWithDays(days: number): SessionOptions {
+/**
+ * Returns session options with a custom maxAge.
+ * @param minutes duration in minutes (clamped to 1 min ~ 365 days)
+ */
+export function sessionOptionsWithMinutes(minutes: number): SessionOptions {
+  const MAX_MINUTES = 365 * ONE_DAY_IN_MINUTES;
+  const clamped = Math.max(1, Math.min(MAX_MINUTES, minutes));
   return {
     ...sessionOptions,
     cookieOptions: {
       ...sessionOptions.cookieOptions,
-      maxAge: ONE_DAY * Math.max(1, Math.min(365, days)),
+      maxAge: clamped * 60, // seconds
     },
   };
 }
