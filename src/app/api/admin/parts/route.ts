@@ -33,8 +33,9 @@ export async function POST(req: NextRequest) {
   if (!name) {
     return NextResponse.json({ error: 'name 필수' }, { status: 400 });
   }
-  if (file.type !== 'image/png') {
-    return NextResponse.json({ error: 'PNG 파일만 허용' }, { status: 400 });
+  const ALLOWED_TYPES = new Set(['image/png', 'image/svg+xml']);
+  if (!ALLOWED_TYPES.has(file.type)) {
+    return NextResponse.json({ error: 'PNG 또는 SVG만 허용' }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: '5MB 이하만 허용' }, { status: 400 });
@@ -44,13 +45,13 @@ export async function POST(req: NextRequest) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // Unique storage path: cat/<timestamp>-<random>.png
-  const filename = `${cat}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+  const ext = file.type === 'image/svg+xml' ? 'svg' : 'png';
+  const filename = `${cat}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from(PARTS_BUCKET)
     .upload(filename, buffer, {
-      contentType: 'image/png',
+      contentType: file.type,
       cacheControl: '31536000',
       upsert: false,
     });

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPhoneInput } from '@/lib/session';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function AuthPage() {
           autoComplete="tel"
           placeholder="010-0000-0000"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
           className="mb-4 w-full rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-sm tracking-[0.08em] text-[#FFE0F0] outline-none transition focus:border-[#FF80C0] focus:bg-[rgba(255,100,180,0.1)]"
           required
         />

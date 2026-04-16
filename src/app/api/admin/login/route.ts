@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   const session = await getIronSession<LabSession>(await cookies(), sessionOptions);
-  session.isAdmin = false;
-  await session.save();
+  session.destroy();
   return NextResponse.json({ ok: true });
 }

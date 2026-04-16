@@ -19,15 +19,16 @@ export default function PartCard({ part }: Props) {
     const wasInCart = inCart;
     const { replaced } = addOrReplace(part);
     if (wasInCart) {
-      setToast(`${part.name} removed`);
+      // Toggle off — visual feedback (button change) is enough, keep toast minimal
+      setToast(`✕ ${part.name} 제거`);
       return;
     }
     // Fly animation to cart widget
     flyToCart(thumbRef.current);
     if (replaced) {
-      setToast(`${replaced.name} → ${part.name} (replaced)`);
+      setToast(`↻ ${replaced.name} → ${part.name}`);
     } else {
-      setToast(`${part.name} added`);
+      setToast(`+ ${part.name} 추가`);
     }
   };
 

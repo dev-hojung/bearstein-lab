@@ -56,7 +56,7 @@ export default function RootLayout({
         ))}
         <link rel="preload" as="image" href={CART_ICON} />
       </head>
-      <body className="h-full overflow-hidden bg-[#1a0018]">{children}</body>
+      <body className="h-full bg-[#1a0018]">{children}</body>
     </html>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { formatPhone } from '@/lib/session';
+import { formatPhone, formatPhoneInput } from '@/lib/session';
 
 type Phone = {
   phone: string;
@@ -163,7 +163,7 @@ function PhonePanel({
             inputMode="numeric"
             placeholder="010-0000-0000"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
             required
           />
@@ -254,8 +254,8 @@ function PartsPanel({
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
-    if (file.type !== 'image/png') {
-      pushToast('PNG 파일만 허용됩니다');
+    if (file.type !== 'image/png' && file.type !== 'image/svg+xml') {
+      pushToast('PNG 또는 SVG 파일만 허용됩니다');
       return;
     }
     setUploading(true);
@@ -325,13 +325,13 @@ function PartsPanel({
         <input
           id="upload-file-input"
           type="file"
-          accept="image/png"
+          accept="image/png,image/svg+xml,.svg"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="block w-full text-xs font-[family-name:var(--font-josefin)] text-[#FFB0D4] file:mr-3 file:rounded file:border file:border-[rgba(255,100,170,0.4)] file:bg-[rgba(255,30,130,0.15)] file:px-3 file:py-1.5 file:text-xs file:tracking-[0.1em] file:text-[#FFB0D4] file:transition hover:file:bg-[rgba(255,30,130,0.3)]"
           required
         />
         <p className="font-[family-name:var(--font-josefin)] text-[0.6rem] font-extralight tracking-[0.1em] text-[rgba(255,150,200,0.5)]">
-          PNG only · max 5MB · 투명 배경 권장
+          PNG / SVG · max 5MB · 투명 배경 권장
         </p>
 
         <button
@@ -372,7 +372,7 @@ function PartsPanel({
                         type="button"
                         onClick={() => handleDelete(p.id, p.name)}
                         aria-label={`Delete ${p.name}`}
-                        className="absolute -right-1 -top-1 hidden h-5 w-5 items-center justify-center rounded-full border border-[#FF80C0] bg-[#CC1166] text-[0.6rem] text-white group-hover:flex"
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[#FF80C0] bg-[#CC1166] text-[0.6rem] text-white transition hover:scale-110"
                       >
                         ✕
                       </button>

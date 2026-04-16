@@ -49,3 +49,11 @@ export function formatPhone(digits: string): string {
 export function isValidKoreanMobile(digits: string): boolean {
   return /^01[016789]\d{7,8}$/.test(digits);
 }
+
+/** Auto-format phone input with dashes as user types: 01012345678 → 010-1234-5678 */
+export function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}

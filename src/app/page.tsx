@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useLabStore } from '@/lib/store';
-import { PARTS_DATA, type Category, type Part } from '@/lib/parts-data';
+import type { Category, Part } from '@/lib/parts-data';
 import LandingScreen from '@/components/screens/LandingScreen';
 import CategoryScreen from '@/components/screens/CategoryScreen';
 import SubcategoryScreen from '@/components/screens/SubcategoryScreen';
@@ -12,21 +12,22 @@ import CartWidget from '@/components/ui/CartWidget';
 import CartPanel from '@/components/ui/CartPanel';
 import Toast from '@/components/ui/Toast';
 
+const EMPTY: Record<Category, Part[]> = { head: [], body: [], arm: [], leg: [] };
+
 export default function Page() {
   const screen = useLabStore((s) => s.screen);
   const hydrated = useLabStore((s) => s.hydrated);
-  const [partsMap, setPartsMap] = useState<Record<Category, Part[]>>(PARTS_DATA);
+  const [partsMap, setPartsMap] = useState<Record<Category, Part[]>>(EMPTY);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch dynamic parts from API (DB). Falls back to hardcoded PARTS_DATA on error.
   useEffect(() => {
     fetch('/api/parts')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.parts) setPartsMap(data.parts);
       })
-      .catch(() => {
-        /* keep fallback PARTS_DATA */
-      });
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   return (

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getIronSession } from 'iron-session';
 import { sessionOptions, type LabSession } from '@/lib/session';
+import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 const PUBLIC_PATHS = new Set(['/auth']);
 const ADMIN_LOGIN = '/admin/login';
@@ -45,6 +46,28 @@ export async function proxy(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = '/auth';
     return NextResponse.redirect(url);
+  }
+
+  // ── Verify phone still in whitelist (revoke access if admin removed the number) ──
+  if (session.phone && !session.isAdmin) {
+    try {
+      const supabase = getSupabaseAdmin();
+      const { data } = await supabase
+        .from('allowed_phones')
+        .select('phone')
+        .eq('phone', session.phone)
+        .maybeSingle();
+
+      if (!data) {
+        // Phone was removed from whitelist — destroy session
+        session.destroy();
+        const url = req.nextUrl.clone();
+        url.pathname = '/auth';
+        return NextResponse.redirect(url);
+      }
+    } catch {
+      // DB error — allow access rather than blocking (fail-open for UX)
+    }
   }
 
   return res;
