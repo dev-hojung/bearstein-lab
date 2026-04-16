@@ -169,14 +169,15 @@ function PhonePanel({
       </h2>
 
       <form onSubmit={handleAdd} className="mb-4 space-y-2">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+        {/* Row 1: phone + label */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <input
             type="tel"
             inputMode="numeric"
             placeholder="010-0000-0000"
             value={phone}
             onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-            className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="h-9 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
             required
           />
           <input
@@ -184,30 +185,38 @@ function PhonePanel({
             placeholder="라벨 (옵션)"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="h-9 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
           />
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min={1}
-              value={durationValue}
-              onChange={(e) => setDurationValue(Math.max(1, Number(e.target.value) || 1))}
-              className="w-14 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-2 py-2 text-center font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
-            />
-            <select
-              value={durationUnit}
-              onChange={(e) => setDurationUnit(e.target.value as Unit)}
-              className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-1.5 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
-            >
-              <option value="min">분</option>
-              <option value="hour">시간</option>
-              <option value="day">일</option>
-            </select>
-          </div>
+        </div>
+
+        {/* Row 2: duration + unit + add button */}
+        <div className="flex items-stretch gap-2">
+          <input
+            type="number"
+            min={1}
+            value={durationValue}
+            onChange={(e) => setDurationValue(Math.max(1, Number(e.target.value) || 1))}
+            className="h-9 w-16 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-2 text-center font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            aria-label="Duration value"
+          />
+          <select
+            value={durationUnit}
+            onChange={(e) => setDurationUnit(e.target.value as Unit)}
+            className="h-9 appearance-none rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] bg-[right_0.5rem_center] bg-no-repeat pl-3 pr-7 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23FFB0D4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+            }}
+            aria-label="Duration unit"
+          >
+            <option value="min">분</option>
+            <option value="hour">시간</option>
+            <option value="day">일</option>
+          </select>
           <button
             type="submit"
             disabled={submitting || !phone}
-            className="rounded border border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] px-4 py-2 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.15em] text-[#FFE0F0] transition hover:from-[#EE2288] hover:to-[#CC1166] disabled:opacity-50"
+            className="h-9 flex-1 rounded border border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] px-4 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.15em] text-[#FFE0F0] transition hover:from-[#EE2288] hover:to-[#CC1166] disabled:opacity-50"
           >
             + Add
           </button>
