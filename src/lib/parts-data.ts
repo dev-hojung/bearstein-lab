@@ -4,6 +4,8 @@ export type Part = {
   id: string;
   name: string;
   cat: Category;
+  /** v2 lab-scene category: 'ears' | 'eyes' | 'ghost' | 'hands' | 'shoes' */
+  catV2?: string;
   url: string;
 };
 
