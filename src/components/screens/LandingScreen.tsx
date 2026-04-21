@@ -12,11 +12,14 @@ import VhsHud from '@/components/ui/VhsHud';
 import { useLabStore } from '@/lib/store';
 
 const INTRO_BG = '/images/bg/intro.webp';
+const INTRO_W = 1342;
+const INTRO_H = 768;
 
 const GLITCH_LAYER_STYLE = {
   backgroundImage: `url(${INTRO_BG})`,
-  backgroundSize: 'cover',
-  backgroundPosition: 'center 70%',
+  backgroundSize: 'contain',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
   imageRendering: 'pixelated' as const,
 };
 
@@ -37,6 +40,7 @@ export default function LandingScreen() {
       section.appendChild(ripple);
       window.setTimeout(() => ripple.remove(), 500);
     }
+
     window.setTimeout(() => goToCategories(), 220);
   };
 
@@ -48,30 +52,39 @@ export default function LandingScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 overflow-hidden bg-[#f6d7e3]"
+      className="fixed inset-0 flex items-center justify-center overflow-hidden bg-[#f6d7e3]"
       onClick={handleEnter}
     >
-      <Image
-        src={INTRO_BG}
-        alt="Bearstein's Laboratory"
-        fill
-        priority
-        unoptimized
-        sizes="100vw"
-        className="z-0 animate-(--animate-crt-flicker) object-cover object-[center_70%]"
-      />
-
       <div
-        className="pointer-events-none absolute inset-0 z-[1] mix-blend-screen animate-(--animate-glitch-r)"
-        style={GLITCH_LAYER_STYLE}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 z-[1] mix-blend-screen animate-(--animate-glitch-b)"
-        style={GLITCH_LAYER_STYLE}
-      />
+        className="relative"
+        style={{
+          width: `min(100vw, calc(100vh * ${INTRO_W / INTRO_H}))`,
+          aspectRatio: `${INTRO_W} / ${INTRO_H}`,
+        }}
+      >
+        <Image
+          src={INTRO_BG}
+          alt="Bearstein's Laboratory"
+          fill
+          priority
+          unoptimized
+          sizes="100vw"
+          className="z-0 animate-(--animate-crt-flicker) object-contain"
+          style={{ imageRendering: 'pixelated' }}
+        />
 
-      <div className="vignette-ov pointer-events-none absolute inset-0 z-[2]" />
-      <div className="scan-ov animate-(--animate-scan-drift) pointer-events-none absolute inset-0 z-[3] opacity-40" />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] mix-blend-screen animate-(--animate-glitch-r)"
+          style={GLITCH_LAYER_STYLE}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] mix-blend-screen animate-(--animate-glitch-b)"
+          style={GLITCH_LAYER_STYLE}
+        />
+
+        <div className="vignette-ov pointer-events-none absolute inset-0 z-[2]" />
+        <div className="scan-ov animate-(--animate-scan-drift) pointer-events-none absolute inset-0 z-[3] opacity-40" />
+      </div>
 
       <button
         type="button"
