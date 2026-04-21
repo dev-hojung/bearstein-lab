@@ -13,7 +13,7 @@ export default function CategoryScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 overflow-hidden bg-[#1a0018]"
+      className="fixed inset-0 overflow-hidden bg-[#FFD1DC]"
     >
       <Image
         src={BACKGROUNDS.s2}
@@ -28,7 +28,7 @@ export default function CategoryScreen() {
 
       <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center p-4">
         <h1
-          className="mb-4 text-center font-[family-name:var(--font-cormorant)] italic font-medium text-[#FF9FD4]"
+          className="mb-4 text-center font-[family-name:var(--font-cormorant)] italic font-medium text-[#C06080]"
           style={{
             fontSize: 'clamp(1.2rem,2.8vw,1.8rem)',
             letterSpacing: '0.04em',

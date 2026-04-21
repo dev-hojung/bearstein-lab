@@ -64,10 +64,10 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="min-h-screen overflow-y-auto bg-[#1a0018] px-5 py-6">
+    <main className="min-h-screen overflow-y-auto bg-[#FFD1DC] px-5 py-6">
       <header className="mx-auto mb-6 flex max-w-5xl items-center justify-between">
         <h1
-          className="font-[family-name:var(--font-cormorant)] italic font-semibold text-2xl text-[#FF9FD4]"
+          className="font-[family-name:var(--font-cormorant)] italic font-semibold text-2xl text-[#C06080]"
           style={{ textShadow: '0 0 12px rgba(255,100,180,0.6)' }}
         >
           Admin Console
@@ -164,7 +164,7 @@ function PhonePanel({
 
   return (
     <section className="rounded-lg border border-[rgba(255,100,180,0.2)] bg-[rgba(20,0,25,0.7)] p-4">
-      <h2 className="mb-3 font-[family-name:var(--font-cormorant)] italic text-lg font-medium text-[#FF9FD4]">
+      <h2 className="mb-3 font-[family-name:var(--font-cormorant)] italic text-lg font-medium text-[#C06080]">
         Allowed phones ({phones.length})
       </h2>
 
@@ -324,7 +324,7 @@ function PartsPanel({
 
   return (
     <section className="rounded-lg border border-[rgba(255,100,180,0.2)] bg-[rgba(20,0,25,0.7)] p-4">
-      <h2 className="mb-3 font-[family-name:var(--font-cormorant)] italic text-lg font-medium text-[#FF9FD4]">
+      <h2 className="mb-3 font-[family-name:var(--font-cormorant)] italic text-lg font-medium text-[#C06080]">
         Parts catalog ({total})
       </h2>
 

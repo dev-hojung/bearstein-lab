@@ -94,7 +94,7 @@ export default function AssemblyScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 overflow-hidden bg-[#1a0018]"
+      className="fixed inset-0 overflow-hidden bg-[#FFD1DC]"
     >
       <Image
         src={BACKGROUNDS.s4}
@@ -111,7 +111,7 @@ export default function AssemblyScreen() {
         <header className="mb-2.5 flex flex-shrink-0 flex-wrap items-center gap-2">
           <BackButton />
           <h1
-            className="font-[family-name:var(--font-cormorant)] italic font-medium text-[#FF9FD4]"
+            className="font-[family-name:var(--font-cormorant)] italic font-medium text-[#C06080]"
             style={{
               fontSize: 'clamp(1.1rem,2.6vw,1.6rem)',
               letterSpacing: '0.04em',
@@ -399,7 +399,7 @@ export default function AssemblyScreen() {
                         style={{ textShadow: '0 0 14px rgba(255,100,180,0.65)' }}
                       >
                         {(selectedScale * 100).toFixed(0)}
-                        <span className="ml-0.5 text-xl text-[#FF9FD4]">%</span>
+                        <span className="ml-0.5 text-xl text-[#C06080]">%</span>
                       </div>
 
                       {/* Slider 30% ~ 300% */}

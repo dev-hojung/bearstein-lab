@@ -34,14 +34,14 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="fixed inset-0 flex items-center justify-center bg-[#1a0018] px-6">
+    <main className="fixed inset-0 flex items-center justify-center bg-[#FFD1DC] px-6">
       <div className="scan-ov pointer-events-none absolute inset-0 z-[1]" />
       <form
         onSubmit={handleSubmit}
         className="relative z-[2] w-full max-w-sm rounded-lg border border-[rgba(255,100,180,0.25)] bg-[rgba(20,0,25,0.85)] p-6 backdrop-blur-sm"
       >
         <h1
-          className="mb-1 text-center font-[family-name:var(--font-cormorant)] italic font-medium text-2xl text-[#FF9FD4]"
+          className="mb-1 text-center font-[family-name:var(--font-cormorant)] italic font-medium text-2xl text-[#C06080]"
           style={{ textShadow: '0 0 15px rgba(255,100,180,0.7)' }}
         >
           Admin Console

@@ -1,11 +1,16 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { BACKGROUNDS, CAT_NAMES, type Category, type Part } from '@/lib/parts-data';
-import { useLabStore } from '@/lib/store';
-import BackButton from '@/components/ui/BackButton';
-import PartCard from '@/components/ui/PartCard';
+import Image from "next/image";
+import { motion } from "framer-motion";
+import {
+  BACKGROUNDS,
+  CAT_NAMES,
+  type Category,
+  type Part,
+} from "@/lib/parts-data";
+import { useLabStore } from "@/lib/store";
+import BackButton from "@/components/ui/BackButton";
+import PartCard from "@/components/ui/PartCard";
 
 type Props = { partsMap: Record<Category, Part[]> };
 
@@ -23,7 +28,7 @@ export default function SubcategoryScreen({ partsMap }: Props) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 overflow-hidden bg-[#1a0018]"
+      className="fixed inset-0 overflow-hidden bg-[#FFD1DC]"
     >
       <Image
         src={BACKGROUNDS.s3}
@@ -32,7 +37,7 @@ export default function SubcategoryScreen({ partsMap }: Props) {
         unoptimized
         sizes="100vw"
         className="z-0 object-cover object-center"
-        style={{ filter: 'brightness(0.55) saturate(1.3)' }}
+        style={{ filter: "brightness(0.55) saturate(1.3)" }}
       />
       <div className="scan-ov pointer-events-none absolute inset-0 z-[1]" />
 
@@ -40,11 +45,11 @@ export default function SubcategoryScreen({ partsMap }: Props) {
         <header className="mb-3 flex flex-shrink-0 items-center gap-3">
           <BackButton />
           <h1
-            className="font-[family-name:var(--font-cormorant)] italic font-medium text-[#FF9FD4]"
+            className="font-[family-name:var(--font-cormorant)] italic font-medium text-[#C06080]"
             style={{
-              fontSize: 'clamp(1.1rem,2.6vw,1.6rem)',
-              letterSpacing: '0.04em',
-              textShadow: '0 0 12px rgba(255,100,180,0.6)',
+              fontSize: "clamp(1.1rem,2.6vw,1.6rem)",
+              letterSpacing: "0.04em",
+              textShadow: "0 0 12px rgba(255,100,180,0.6)",
             }}
           >
             {CAT_NAMES[cat]}
@@ -53,7 +58,9 @@ export default function SubcategoryScreen({ partsMap }: Props) {
 
         <div
           className="lab-scroll grid flex-1 gap-2.5 overflow-y-auto pb-[70px]"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))' }}
+          style={{
+            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+          }}
         >
           {parts.map((part) => (
             <PartCard key={part.id} part={part} />

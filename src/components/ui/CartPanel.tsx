@@ -39,7 +39,7 @@ export default function CartPanel() {
       >
         <header className="flex items-center justify-between border-b border-[rgba(255,100,180,0.2)] px-3.5 py-2.5">
           <h2
-            className="font-[family-name:var(--font-cormorant)] italic font-semibold text-[1.15rem] tracking-[0.04em] text-[#FF9FD4]"
+            className="font-[family-name:var(--font-cormorant)] italic font-semibold text-[1.15rem] tracking-[0.04em] text-[#C06080]"
             style={{ textShadow: '0 0 10px rgba(255,100,180,0.5)' }}
           >
             🛒 Cart

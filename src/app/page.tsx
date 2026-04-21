@@ -12,6 +12,8 @@ import CartWidget from '@/components/ui/CartWidget';
 import CartPanel from '@/components/ui/CartPanel';
 import Toast from '@/components/ui/Toast';
 import SessionGuard from '@/components/ui/SessionGuard';
+import RotateOverlay from '@/components/ui/RotateOverlay';
+import PixelHeartCursor from '@/components/ui/PixelHeartCursor';
 
 const EMPTY: Record<Category, Part[]> = { head: [], body: [], arm: [], leg: [] };
 
@@ -32,7 +34,7 @@ export default function Page() {
   }, []);
 
   return (
-    <main className="fixed inset-0 overflow-hidden bg-[#1a0018]">
+    <main className="cursor-game fixed inset-0 overflow-hidden bg-[#FFD1DC]">
       {hydrated && (
         <AnimatePresence mode="wait">
           {screen === 's1' && <LandingScreen />}
@@ -46,6 +48,8 @@ export default function Page() {
       <CartPanel />
       <Toast />
       <SessionGuard />
+      <RotateOverlay />
+      <PixelHeartCursor />
     </main>
   );
 }
