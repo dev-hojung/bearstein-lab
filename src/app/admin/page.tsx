@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { formatPhone, formatPhoneInput } from '@/lib/session';
+import { LAB_SCENE_ASSETS } from '@/lib/lab-scene-data';
 
 type Phone = {
   phone: string;
@@ -64,25 +65,46 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="min-h-screen overflow-y-auto bg-[#FFD1DC] px-5 py-6">
-      <header className="mx-auto mb-6 flex max-w-5xl items-center justify-between">
-        <h1
-          className="font-[family-name:var(--font-cormorant)] italic font-semibold text-2xl text-[#C06080]"
-          style={{ textShadow: '0 0 12px rgba(255,100,180,0.6)' }}
-        >
-          Admin Console
-        </h1>
+    <main className="relative min-h-screen overflow-y-auto bg-[#0d0510] px-5 py-6">
+      {/* World-continuity backdrop — dimmed lab scene + scanlines. */}
+      <Image
+        src={LAB_SCENE_ASSETS.dark}
+        alt=""
+        aria-hidden
+        fill
+        priority
+        unoptimized
+        sizes="100vw"
+        className="pointer-events-none object-cover opacity-25"
+        style={{ imageRendering: 'pixelated' }}
+      />
+      <div className="vignette-ov pointer-events-none fixed inset-0 z-[1]" />
+      <div className="scan-ov pointer-events-none fixed inset-0 z-[2] opacity-30" />
+
+      <header className="relative z-[3] mx-auto mb-6 flex max-w-5xl items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.3em] text-[#FFB0D4]">
+            <span className="pass-hud-dot" />
+            KEYMASTER · ADMIN CONSOLE
+          </span>
+          <h1
+            className="font-[family-name:var(--font-cormorant)] italic font-semibold text-2xl text-[#FFE0F0]"
+            style={{ textShadow: '0 0 12px rgba(255,100,180,0.6)' }}
+          >
+            Bearstein&rsquo;s Vault
+          </h1>
+        </div>
         <div className="flex gap-2">
           <a
             href="/"
-            className="rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.12em] text-[#FFB0D4] transition hover:text-[#FFE0F0]"
+            className="rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.22em] text-[#FFB0D4] transition active:scale-[0.97] active:bg-[rgba(255,30,130,0.35)]"
           >
-            ← View app
+            ← View Lab
           </a>
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.12em] text-[#FFB0D4] transition hover:text-[#FFE0F0]"
+            className="rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.22em] text-[#FFB0D4] transition active:scale-[0.97] active:bg-[rgba(255,30,130,0.35)]"
           >
             Logout
           </button>
@@ -90,9 +112,11 @@ export default function AdminPage() {
       </header>
 
       {loading ? (
-        <p className="text-center text-[rgba(255,150,200,0.6)]">Loading…</p>
+        <p className="relative z-[3] text-center font-[family-name:var(--font-mono-hud)] text-xs tracking-[0.2em] text-[rgba(255,150,200,0.6)]">
+          Loading…
+        </p>
       ) : (
-        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
+        <div className="relative z-[3] mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
           <PhonePanel phones={phones} reload={loadPhones} pushToast={pushToast} />
           <PartsPanel parts={parts} reload={loadParts} pushToast={pushToast} />
         </div>
@@ -101,7 +125,7 @@ export default function AdminPage() {
       {toast && (
         <div
           role="status"
-          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded border border-[#FF80C0] bg-[#CC1166] px-4 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-widest text-[#FFE0F0]"
+          className="fixed bottom-6 left-1/2 z-[50] -translate-x-1/2 rounded border border-[#FF80C0] bg-[#CC1166] px-4 py-2 font-[family-name:var(--font-mono-hud)] text-xs tracking-widest text-[#FFE0F0]"
         >
           {toast}
         </div>

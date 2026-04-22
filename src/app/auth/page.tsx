@@ -1,8 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { formatPhoneInput } from '@/lib/session';
+import { LAB_SCENE_ASSETS } from '@/lib/lab-scene-data';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -35,27 +38,46 @@ export default function AuthPage() {
   };
 
   return (
-    <main className="fixed inset-0 flex items-center justify-center bg-[#FFD1DC] px-6">
-      <div className="scan-ov pointer-events-none absolute inset-0 z-[1]" />
-      <form
-        onSubmit={handleSubmit}
-        className="relative z-[2] w-full max-w-sm rounded-lg border border-[rgba(255,100,180,0.25)] bg-[rgba(20,0,25,0.85)] p-6 backdrop-blur-sm"
-      >
+    <main className="fixed inset-0 flex h-[100dvh] w-[100dvw] items-center justify-center overflow-hidden bg-[#0d0510] px-5">
+      {/* Dim the lab scene so the pass card pops. */}
+      <Image
+        src={LAB_SCENE_ASSETS.dark}
+        alt=""
+        aria-hidden
+        fill
+        priority
+        unoptimized
+        sizes="100vw"
+        className="object-cover opacity-40"
+        style={{ imageRendering: 'pixelated' }}
+      />
+      <div className="vignette-ov pointer-events-none absolute inset-0 z-[1]" />
+      <div className="scan-ov pointer-events-none absolute inset-0 z-[2] opacity-50" />
+
+      <form onSubmit={handleSubmit} className="pass-card relative z-[3] w-full max-w-[380px]">
+        {/* Top HUD row */}
+        <div className="mb-4 flex items-center justify-between">
+          <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.3em] text-[#A0446C]">
+            <span className="pass-hud-dot" />
+            OPERATOR PASS
+          </span>
+          <span className="font-[family-name:var(--font-mono-hud)] text-[9px] tracking-[0.22em] text-[#C06C96]">
+            V1.37
+          </span>
+        </div>
+
         <h1
-          className="mb-1 text-center font-[family-name:var(--font-cormorant)] italic font-medium text-2xl text-[#C06080]"
-          style={{ textShadow: '0 0 15px rgba(255,100,180,0.7)' }}
+          className="mb-1 font-[family-name:var(--font-cormorant)] italic font-medium leading-[1.1] text-[1.7rem] text-[#7D2A52]"
+          style={{ textShadow: '0 0 8px rgba(255, 150, 200, 0.35)' }}
         >
-          Bearstein&apos;s Lab
+          Bearstein&rsquo;s<br />Laboratory
         </h1>
-        <p className="mb-6 text-center font-[family-name:var(--font-josefin)] text-[0.7rem] font-extralight tracking-[0.2em] text-[rgba(255,200,230,0.55)]">
-          Enter your phone to access
+        <p className="mb-5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.24em] text-[#A0446C]">
+          등록된 번호로 출입하세요
         </p>
 
-        <label
-          htmlFor="phone"
-          className="mb-1 block font-[family-name:var(--font-josefin)] text-[0.65rem] font-light tracking-[0.15em] text-[#FFB0D4]"
-        >
-          PHONE
+        <label htmlFor="phone" className="pass-label">
+          Phone Number
         </label>
         <input
           id="phone"
@@ -65,29 +87,30 @@ export default function AuthPage() {
           placeholder="010-0000-0000"
           value={phone}
           onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-          className="mb-4 w-full rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-sm tracking-[0.08em] text-[#FFE0F0] outline-none transition focus:border-[#FF80C0] focus:bg-[rgba(255,100,180,0.1)]"
+          className="pass-input mb-4"
           required
         />
 
         {error && (
-          <div
-            role="alert"
-            className="mb-3 rounded border border-[rgba(255,100,100,0.4)] bg-[rgba(200,30,60,0.15)] px-3 py-2 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.05em] text-[#FFB8B8]"
-          >
-            {error}
+          <div role="alert" className="pass-error">
+            ⚠ SIGNAL ERROR · {error}
           </div>
         )}
 
         <button
           type="submit"
           disabled={submitting || !phone}
-          className="w-full cursor-pointer rounded border border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] px-4 py-2 font-[family-name:var(--font-josefin)] text-sm tracking-[0.2em] text-[#FFE0F0] shadow-[0_0_14px_rgba(204,17,102,0.4)] transition hover:from-[#EE2288] hover:to-[#CC1166] disabled:opacity-50"
+          className="pass-button"
+          aria-label="Enter the laboratory"
         >
-          {submitting ? '…' : 'Enter →'}
+          {submitting ? 'Unlocking…' : 'Enter the Lab →'}
         </button>
 
-        <p className="mt-4 text-center font-[family-name:var(--font-josefin)] text-[0.58rem] font-extralight tracking-[0.15em] text-[rgba(255,150,200,0.4)]">
-          Admins: <a href="/admin" className="underline hover:text-[#FFB0D4]">/admin</a>
+        <p className="mt-5 text-center font-[family-name:var(--font-mono-hud)] text-[9px] tracking-[0.22em] text-[#A0446C]/70">
+          Admins ·{' '}
+          <a href="/admin" className="underline decoration-dotted underline-offset-2">
+            /admin
+          </a>
         </p>
       </form>
     </main>
