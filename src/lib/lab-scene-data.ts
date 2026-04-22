@@ -32,26 +32,23 @@ export type ShelfZone = {
   y2: number;
 };
 
+// Click zones tightened to the CENTER item of each shelf only (roughly 12% wide).
 export const SHELF_ZONES: readonly ShelfZone[] = [
-  { id: 'ears', x1: 0.3, x2: 0.68, y1: 0.095, y2: 0.27 },
-  { id: 'eyes', x1: 0.3, x2: 0.68, y1: 0.28, y2: 0.42 },
-  { id: 'ghost', x1: 0.3, x2: 0.68, y1: 0.445, y2: 0.57 },
-  { id: 'hands', x1: 0.3, x2: 0.68, y1: 0.615, y2: 0.74 },
-  { id: 'shoes', x1: 0.3, x2: 0.68, y1: 0.755, y2: 0.91 },
+  { id: 'ears', x1: 0.44, x2: 0.56, y1: 0.11, y2: 0.255 },
+  { id: 'eyes', x1: 0.44, x2: 0.56, y1: 0.295, y2: 0.4 },
+  { id: 'ghost', x1: 0.44, x2: 0.56, y1: 0.45, y2: 0.56 },
+  { id: 'hands', x1: 0.44, x2: 0.56, y1: 0.625, y2: 0.73 },
+  { id: 'shoes', x1: 0.44, x2: 0.56, y1: 0.77, y2: 0.89 },
 ] as const;
 
-export type LabAssetVariant = 'ref' | 'new';
+export const LAB_SCENE_ASSETS = {
+  bright: '/images/bg/lab-bright.webp',
+  dark: '/images/bg/lab-dark.webp',
+} as const;
 
-export const LAB_SCENE_ASSETS: Record<LabAssetVariant, { bright: string; dark: string }> = {
-  ref: {
-    bright: '/images/bg/lab-bright.jpg',
-    dark: '/images/bg/lab-dark.jpg',
-  },
-  new: {
-    bright: '/images/bg/lab-new.jpg',
-    dark: '/images/bg/lab-new.jpg',
-  },
-};
+// Standalone pre-rendered bg for the part-shelf screen (preview4 composition:
+// cabinet on the left + empty tile slots on the right).
+export const PART_SHELF_BG = '/images/bg/part-shelf-bg.webp';
 
 export const PARTS_SHELF_ASSET = '/images/bg/parts-shelf.jpg';
 

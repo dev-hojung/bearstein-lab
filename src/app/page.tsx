@@ -1,56 +1,41 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AnimatePresence } from 'framer-motion';
 
 import AssemblyScreen from '@/components/screens/AssemblyScreen';
-import CategoryScreen from '@/components/screens/CategoryScreen';
 import LabSceneScreen from '@/components/screens/LabSceneScreen';
 import LandingScreen from '@/components/screens/LandingScreen';
 import PartShelfScreen from '@/components/screens/PartShelfScreen';
-import SubcategoryScreen from '@/components/screens/SubcategoryScreen';
-import CartPanel from '@/components/ui/CartPanel';
-import CartWidget from '@/components/ui/CartWidget';
 import PixelHeartCursor from '@/components/ui/PixelHeartCursor';
 import RotateOverlay from '@/components/ui/RotateOverlay';
 import SessionGuard from '@/components/ui/SessionGuard';
 import Toast from '@/components/ui/Toast';
 
-import type { LabAssetVariant, LabCategory } from '@/lib/lab-scene-data';
+import type { LabCategory } from '@/lib/lab-scene-data';
 import type { Category, Part } from '@/lib/parts-data';
 import { runPixelGlitch } from '@/lib/pixel-glitch';
 import { useLabStore } from '@/lib/store';
+import {
+  buildSectionQuery,
+  readSectionFromLocation,
+  screenFromSection,
+  sectionFromScreen,
+} from '@/lib/url-section';
 
 const EMPTY: Record<Category, Part[]> = { head: [], body: [], arm: [], leg: [] };
-
-const subscribeUrl = (cb: () => void) => {
-  if (typeof window === 'undefined') {
-    return () => {};
-  }
-
-  window.addEventListener('popstate', cb);
-
-  return () => window.removeEventListener('popstate', cb);
-};
-
-const useSearchParam = (name: string): string | null =>
-  useSyncExternalStore(
-    subscribeUrl,
-    () => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get(name)),
-    () => null,
-  );
 
 export default function Page() {
   const screen = useLabStore((s) => s.screen);
   const hydrated = useLabStore((s) => s.hydrated);
   const show = useLabStore((s) => s.show);
   const [partsMap, setPartsMap] = useState<Record<Category, Part[]>>(EMPTY);
-  const [labAsset, setLabAsset] = useState<LabAssetVariant>('ref');
-  const [v2Cat, setV2Cat] = useState<LabCategory | null>(null);
+  const [cat, setCat] = useState<LabCategory | null>(null);
   const mainRef = useRef<HTMLElement>(null);
-
-  const expV2 = useSearchParam('exp') === 'v2';
+  // Flag: suppresses URL writes during the initial URL → state hydration so
+  // we don't race the read and clobber the incoming section.
+  const hydratedFromUrlRef = useRef(false);
 
   useEffect(() => {
     fetch('/api/parts')
@@ -63,43 +48,79 @@ export default function Page() {
       .catch(() => {});
   }, []);
 
-  const handlePickLabCat = (cat: LabCategory) => {
-    const target = mainRef.current;
+  // URL → state: once the store has hydrated, read ?s= and ?cat= and drive
+  // the initial screen from there. Also hooks popstate for browser back/forward.
+  useEffect(() => {
+    if (!hydrated) return;
 
-    if (!target) {
-      setV2Cat(cat);
-      show('s3');
+    const applyFromLocation = () => {
+      const { section, cat: urlCat } = readSectionFromLocation(window.location.search);
+      const targetScreen = screenFromSection(section);
+      // Guard: shelf without a valid cat collapses back to lab.
+      if (targetScreen === 's3' && !urlCat) {
+        show('s2');
+        setCat(null);
+        return;
+      }
+      setCat(urlCat);
+      show(targetScreen);
+    };
 
-      return;
-    }
+    applyFromLocation();
+    hydratedFromUrlRef.current = true;
 
-    runPixelGlitch(target, {
-      onMid: () => {
-        setV2Cat(cat);
-        show('s3');
-      },
-    });
-  };
+    window.addEventListener('popstate', applyFromLocation);
+    return () => window.removeEventListener('popstate', applyFromLocation);
+  }, [hydrated, show]);
 
-  const handleBackFromShelf = () => {
-    const target = mainRef.current;
+  // state → URL: whenever screen or cat change after initial hydration, mirror
+  // the state into the URL with pushState so back/forward traverses sections.
+  useEffect(() => {
+    if (!hydrated || !hydratedFromUrlRef.current) return;
 
-    if (!target) {
-      setV2Cat(null);
+    const section = sectionFromScreen(screen);
+    const next = buildSectionQuery(section, cat);
+    const current = window.location.search;
+    if (next === current) return;
+    window.history.pushState(null, '', next + window.location.hash);
+  }, [screen, cat, hydrated]);
+
+  // Safety net: s3 needs a LabCategory. If we land there without one, fall
+  // back to lab instead of rendering nothing.
+  useEffect(() => {
+    if (hydrated && screen === 's3' && !cat) {
       show('s2');
+    }
+  }, [hydrated, screen, cat, show]);
 
+  const handlePickLabCat = useCallback(
+    (next: LabCategory) => {
+      setCat(next);
+      const target = mainRef.current;
+      if (target) {
+        runPixelGlitch(target, { duration: 520 });
+      }
+      show('s3');
+    },
+    [show],
+  );
+
+  const handleBackFromShelf = useCallback(() => {
+    const target = mainRef.current;
+
+    if (!target) {
+      setCat(null);
+      show('s2');
       return;
     }
 
     runPixelGlitch(target, {
       onMid: () => {
-        setV2Cat(null);
+        setCat(null);
         show('s2');
       },
     });
-  };
-
-  const toggleAsset = () => setLabAsset((a) => (a === 'ref' ? 'new' : 'ref'));
+  }, [show]);
 
   return (
     <main
@@ -109,32 +130,18 @@ export default function Page() {
       {hydrated && (
         <AnimatePresence mode="wait">
           {screen === 's1' && <LandingScreen />}
-          {screen === 's2' &&
-            (expV2 ? (
-              <LabSceneScreen
-                asset={labAsset}
-                onPick={handlePickLabCat}
-                onToggleAsset={toggleAsset}
-              />
-            ) : (
-              <CategoryScreen />
-            ))}
-          {screen === 's3' &&
-            (expV2 && v2Cat ? (
-              <PartShelfScreen
-                category={v2Cat}
-                partsMap={partsMap}
-                onBack={handleBackFromShelf}
-              />
-            ) : (
-              <SubcategoryScreen partsMap={partsMap} />
-            ))}
+          {screen === 's2' && <LabSceneScreen onPick={handlePickLabCat} />}
+          {screen === 's3' && cat && (
+            <PartShelfScreen
+              category={cat}
+              partsMap={partsMap}
+              onBack={handleBackFromShelf}
+            />
+          )}
           {screen === 's4' && <AssemblyScreen />}
         </AnimatePresence>
       )}
 
-      <CartWidget />
-      <CartPanel />
       <Toast />
       <SessionGuard />
       <RotateOverlay />

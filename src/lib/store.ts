@@ -106,11 +106,16 @@ export const useLabStore = create<LabState>()(
     }),
     {
       name: 'bearstein-lab-cart',
+      // Bumped when the persisted shape changes so stale v1 data (which
+      // persisted `screen`/`cat`) doesn't get merged back in.
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      // Deliberately do NOT persist `screen` or `cat`: v2 tracks the selected
+      // shelf in page-local state, and persisting the screen stage causes a
+      // blank render when a rehydrated screen expects state that was only held
+      // in memory (e.g. s3 needs a selected LabCategory).
       partialize: (state) => ({
         cart: state.cart,
-        screen: state.screen,
-        cat: state.cat,
         partOffsets: state.partOffsets,
         partScales: state.partScales,
       }),

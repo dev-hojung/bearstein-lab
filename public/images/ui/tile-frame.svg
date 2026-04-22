@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" shape-rendering="crispEdges" preserveAspectRatio="none" width="20" height="20">
+  <!-- Top edge (1-pixel rounded corner cut at each end) -->
+  <rect x="1" y="0" width="18" height="1" fill="#d98fb4"/>
+
+  <!-- Row 1: full-width light pink with dark pink corner pixels -->
+  <rect x="0" y="1" width="1" height="1" fill="#d98fb4"/>
+  <rect x="1" y="1" width="18" height="1" fill="#f9b1ce"/>
+  <rect x="19" y="1" width="1" height="1" fill="#d98fb4"/>
+
+  <!-- Middle rows (2..17): 2-pixel frame -->
+  <rect x="0" y="2" width="1" height="16" fill="#d98fb4"/>
+  <rect x="1" y="2" width="1" height="16" fill="#f9b1ce"/>
+  <rect x="18" y="2" width="1" height="16" fill="#f9b1ce"/>
+  <rect x="19" y="2" width="1" height="16" fill="#d98fb4"/>
+
+  <!-- Interior: pastel tint -->
+  <rect x="2" y="2" width="16" height="16" fill="#fff6fa"/>
+  <!-- Top-left highlight (bright shine running along top + left) -->
+  <rect x="2" y="2" width="16" height="1" fill="#ffffff"/>
+  <rect x="2" y="2" width="1" height="16" fill="#ffffff"/>
+  <!-- Bottom-right inner shadow (very faint) -->
+  <rect x="2" y="17" width="16" height="1" fill="#ffe4ef"/>
+  <rect x="17" y="2" width="1" height="16" fill="#ffe4ef"/>
+
+  <!-- Row 18: mirror of row 1 -->
+  <rect x="0" y="18" width="1" height="1" fill="#d98fb4"/>
+  <rect x="1" y="18" width="18" height="1" fill="#f9b1ce"/>
+  <rect x="19" y="18" width="1" height="1" fill="#d98fb4"/>
+
+  <!-- Bottom edge -->
+  <rect x="1" y="19" width="18" height="1" fill="#d98fb4"/>
+</svg>

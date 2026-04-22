@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Josefin_Sans, Great_Vibes } from 'next/font/google';
-import { BACKGROUNDS, CART_ICON, CRT_THUMBS } from '@/lib/parts-data';
+import { BACKGROUNDS } from '@/lib/parts-data';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -36,9 +36,7 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Dedupe — s2 and s3 share the same JPEG, so we only need 3 unique bgs
   const uniqueBgs = Array.from(new Set(Object.values(BACKGROUNDS)));
-  const uniqueCrts = Array.from(new Set(Object.values(CRT_THUMBS)));
 
   return (
     <html
@@ -46,15 +44,9 @@ export default function RootLayout({
       className={`${cormorant.variable} ${josefin.variable} ${greatVibes.variable} antialiased h-full`}
     >
       <head>
-        {/* Preload every background + CRT thumb at app boot so screen
-            transitions never paint foreground over a missing background. */}
         {uniqueBgs.map((href) => (
           <link key={href} rel="preload" as="image" href={href} fetchPriority="high" />
         ))}
-        {uniqueCrts.map((href) => (
-          <link key={href} rel="preload" as="image" href={href} />
-        ))}
-        <link rel="preload" as="image" href={CART_ICON} />
       </head>
       <body className="h-full bg-[#FFD1DC]">{children}</body>
     </html>
