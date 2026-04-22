@@ -16,7 +16,6 @@ type Phone = {
 
 const UNIT_TO_MINUTES = { min: 1, hour: 60, day: 60 * 24 } as const;
 type Unit = keyof typeof UNIT_TO_MINUTES;
-const UNIT_LABEL: Record<Unit, string> = { min: '분', hour: '시간', day: '일' };
 
 function formatDuration(minutes: number): string {
   if (minutes % (60 * 24) === 0) return `${minutes / (60 * 24)}일`;
@@ -66,7 +65,6 @@ export default function AdminPage() {
 
   return (
     <main className="relative min-h-screen overflow-y-auto bg-[#0d0510] px-5 py-6">
-      {/* World-continuity backdrop — dimmed lab scene + scanlines. */}
       <Image
         src={LAB_SCENE_ASSETS.dark}
         alt=""
@@ -81,8 +79,8 @@ export default function AdminPage() {
       <div className="vignette-ov pointer-events-none fixed inset-0 z-[1]" />
       <div className="scan-ov pointer-events-none fixed inset-0 z-[2] opacity-30" />
 
-      <header className="relative z-[3] mx-auto mb-6 flex max-w-5xl items-center justify-between">
-        <div className="flex flex-col gap-0.5">
+      <header className="relative z-[3] mx-auto mb-6 flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
           <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.3em] text-[#FFB0D4]">
             <span className="pass-hud-dot" />
             KEYMASTER · ADMIN CONSOLE
@@ -91,28 +89,19 @@ export default function AdminPage() {
             className="font-[family-name:var(--font-cormorant)] italic font-semibold text-2xl text-[#FFE0F0]"
             style={{ textShadow: '0 0 12px rgba(255,100,180,0.6)' }}
           >
-            Bearstein&rsquo;s Vault
+            Bearstein&rsquo;s Laboratory
           </h1>
         </div>
         <div className="flex gap-2">
-          <a
-            href="/"
-            className="rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.22em] text-[#FFB0D4] transition active:scale-[0.97] active:bg-[rgba(255,30,130,0.35)]"
-          >
-            ← View Lab
-          </a>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.22em] text-[#FFB0D4] transition active:scale-[0.97] active:bg-[rgba(255,30,130,0.35)]"
-          >
+          <a href="/" className="pass-chip">← View Lab</a>
+          <button type="button" onClick={handleLogout} className="pass-chip">
             Logout
           </button>
         </div>
       </header>
 
       {loading ? (
-        <p className="relative z-[3] text-center font-[family-name:var(--font-mono-hud)] text-xs tracking-[0.2em] text-[rgba(255,150,200,0.6)]">
+        <p className="relative z-[3] text-center font-[family-name:var(--font-mono-hud)] text-xs tracking-[0.2em] text-[rgba(255,200,220,0.6)]">
           Loading…
         </p>
       ) : (
@@ -123,10 +112,7 @@ export default function AdminPage() {
       )}
 
       {toast && (
-        <div
-          role="status"
-          className="fixed bottom-6 left-1/2 z-[50] -translate-x-1/2 rounded border border-[#FF80C0] bg-[#CC1166] px-4 py-2 font-[family-name:var(--font-mono-hud)] text-xs tracking-widest text-[#FFE0F0]"
-        >
+        <div role="status" className="pass-chip fixed bottom-6 left-1/2 z-[50] -translate-x-1/2">
           {toast}
         </div>
       )}
@@ -187,13 +173,12 @@ function PhonePanel({
   };
 
   return (
-    <section className="rounded-lg border border-[rgba(255,100,180,0.2)] bg-[rgba(20,0,25,0.7)] p-4">
-      <h2 className="mb-3 font-[family-name:var(--font-cormorant)] italic text-lg font-medium text-[#C06080]">
-        Allowed phones ({phones.length})
+    <section className="pass-panel">
+      <h2 className="pass-panel-title">
+        Allowed phones <span className="text-[#A0446C]">({phones.length})</span>
       </h2>
 
       <form onSubmit={handleAdd} className="mb-4 space-y-2">
-        {/* Row 1: phone + label */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <input
             type="tel"
@@ -201,7 +186,7 @@ function PhonePanel({
             placeholder="010-0000-0000"
             value={phone}
             onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
-            className="h-9 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="pass-input"
             required
           />
           <input
@@ -209,64 +194,52 @@ function PhonePanel({
             placeholder="라벨 (옵션)"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            className="h-9 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="pass-input"
           />
         </div>
 
-        {/* Row 2: duration + unit + add button */}
-        <div className="flex items-stretch gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[88px_112px_1fr]">
           <input
             type="number"
             min={1}
             value={durationValue}
             onChange={(e) => setDurationValue(Math.max(1, Number(e.target.value) || 1))}
-            className="h-9 w-16 rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-2 text-center font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="pass-input text-center"
             aria-label="Duration value"
           />
           <select
             value={durationUnit}
             onChange={(e) => setDurationUnit(e.target.value as Unit)}
-            className="h-9 appearance-none rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] bg-[right_0.5rem_center] bg-no-repeat pl-3 pr-7 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23FFB0D4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
-            }}
+            className="pass-select"
             aria-label="Duration unit"
           >
             <option value="min">분</option>
             <option value="hour">시간</option>
             <option value="day">일</option>
           </select>
-          <button
-            type="submit"
-            disabled={submitting || !phone}
-            className="h-9 flex-1 rounded border border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] px-4 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.15em] text-[#FFE0F0] transition hover:from-[#EE2288] hover:to-[#CC1166] disabled:opacity-50"
-          >
+          <button type="submit" disabled={submitting || !phone} className="pass-button">
             + Add
           </button>
         </div>
       </form>
 
-      <ul className="lab-scroll max-h-[360px] space-y-1 overflow-y-auto">
+      <ul className="lab-scroll max-h-[360px] space-y-1.5 overflow-y-auto pr-1">
         {phones.length === 0 ? (
-          <li className="py-8 text-center font-[family-name:var(--font-josefin)] text-xs tracking-[0.1em] text-[rgba(255,150,200,0.5)]">
+          <li className="py-8 text-center font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.22em] text-[#A0446C]/60">
             등록된 번호가 없습니다.
           </li>
         ) : (
           phones.map((p) => (
-            <li
-              key={p.phone}
-              className="flex items-center justify-between rounded border border-[rgba(255,100,180,0.15)] bg-[rgba(255,100,180,0.06)] px-3 py-2"
-            >
+            <li key={p.phone} className="pass-row">
               <div>
-                <div className="font-[family-name:var(--font-josefin)] text-sm tracking-[0.08em] text-[#FFB0D4]">
+                <div className="font-[family-name:var(--font-mono-hud)] text-sm tracking-[0.12em] text-[#5C1E3D]">
                   {formatPhone(p.phone)}
                 </div>
-                <div className="font-[family-name:var(--font-josefin)] text-[0.62rem] tracking-[0.1em] text-[rgba(255,150,200,0.55)]">
+                <div className="mt-0.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.16em] text-[#A0446C]">
                   {p.label ?? '—'}
                   <span className="ml-2">· {formatDuration(p.session_minutes)}</span>
                   {p.last_seen_at && (
-                    <span className="ml-2 text-[#A0FFB8]">
+                    <span className="ml-2 text-[#3F8B5A]">
                       · last: {new Date(p.last_seen_at).toLocaleDateString()}
                     </span>
                   )}
@@ -276,7 +249,7 @@ function PhonePanel({
                 type="button"
                 onClick={() => handleRemove(p.phone)}
                 aria-label={`Remove ${p.phone}`}
-                className="rounded px-2 py-0.5 font-[family-name:var(--font-josefin)] text-xs text-[rgba(255,100,100,0.6)] transition hover:text-[#FF4466]"
+                className="pass-chip pass-chip--danger !px-2.5 !py-1 !text-[10px]"
               >
                 ✕
               </button>
@@ -344,12 +317,16 @@ function PartsPanel({
     await reload();
   };
 
-  const total = (parts.head?.length ?? 0) + (parts.body?.length ?? 0) + (parts.arm?.length ?? 0) + (parts.leg?.length ?? 0);
+  const total =
+    (parts.head?.length ?? 0) +
+    (parts.body?.length ?? 0) +
+    (parts.arm?.length ?? 0) +
+    (parts.leg?.length ?? 0);
 
   return (
-    <section className="rounded-lg border border-[rgba(255,100,180,0.2)] bg-[rgba(20,0,25,0.7)] p-4">
-      <h2 className="mb-3 font-[family-name:var(--font-cormorant)] italic text-lg font-medium text-[#C06080]">
-        Parts catalog ({total})
+    <section className="pass-panel">
+      <h2 className="pass-panel-title">
+        Parts catalog <span className="text-[#A0446C]">({total})</span>
       </h2>
 
       <form onSubmit={handleUpload} className="mb-4 space-y-2">
@@ -359,13 +336,13 @@ function PartsPanel({
             placeholder="파츠 이름"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="pass-input"
             required
           />
           <select
             value={cat}
             onChange={(e) => setCat(e.target.value as typeof cat)}
-            className="rounded border border-[rgba(255,100,170,0.3)] bg-[rgba(255,100,180,0.06)] px-3 py-2 font-[family-name:var(--font-josefin)] text-xs tracking-[0.08em] text-[#FFE0F0] outline-none focus:border-[#FF80C0]"
+            className="pass-select"
           >
             <option value="head">Head</option>
             <option value="body">Body</option>
@@ -379,52 +356,59 @@ function PartsPanel({
           type="file"
           accept="image/png,image/svg+xml,.svg"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="block w-full text-xs font-[family-name:var(--font-josefin)] text-[#FFB0D4] file:mr-3 file:rounded file:border file:border-[rgba(255,100,170,0.4)] file:bg-[rgba(255,30,130,0.15)] file:px-3 file:py-1.5 file:text-xs file:tracking-[0.1em] file:text-[#FFB0D4] file:transition hover:file:bg-[rgba(255,30,130,0.3)]"
+          className="block w-full font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.12em] text-[#5C1E3D] file:mr-3 file:rounded-[1px] file:border-0 file:bg-[#FFE4EF] file:px-3 file:py-1.5 file:font-[family-name:var(--font-mono-hud)] file:text-[10px] file:tracking-[0.22em] file:text-[#7D2A52] file:shadow-[inset_0_0_0_1px_#FFFFFF,inset_0_-2px_0_#F2A9C8,0_0_0_1px_#D98FB4] active:file:translate-y-[2px]"
           required
         />
-        <p className="font-[family-name:var(--font-josefin)] text-[0.6rem] font-extralight tracking-[0.1em] text-[rgba(255,150,200,0.5)]">
+        <p className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.18em] text-[#A0446C]/70">
           PNG / SVG · max 5MB · 투명 배경 권장
         </p>
 
         <button
           type="submit"
           disabled={uploading || !file || !name}
-          className="w-full rounded border border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] px-4 py-2 font-[family-name:var(--font-josefin)] text-[0.75rem] tracking-[0.15em] text-[#FFE0F0] transition hover:from-[#EE2288] hover:to-[#CC1166] disabled:opacity-50"
+          className="pass-button"
         >
-          {uploading ? '⏳ Uploading…' : '⬆ Upload'}
+          {uploading ? 'Uploading…' : '⬆ Upload Part'}
         </button>
       </form>
 
-      <div className="lab-scroll max-h-[360px] overflow-y-auto">
+      <div className="lab-scroll max-h-[360px] overflow-y-auto pr-1">
         {(['head', 'body', 'arm', 'leg'] as const).map((c) => {
           const items = parts[c] ?? [];
           return (
             <div key={c} className="mb-3">
-              <div className="mb-1.5 font-[family-name:var(--font-josefin)] text-[0.6rem] font-light tracking-[0.2em] text-[rgba(255,150,200,0.6)]">
-                {c.toUpperCase()} ({items.length})
+              <div className="mb-1.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.26em] text-[#A0446C]">
+                {c.toUpperCase()} <span className="text-[#A0446C]/60">({items.length})</span>
               </div>
               {items.length === 0 ? (
-                <div className="rounded border border-dashed border-[rgba(255,100,180,0.15)] py-3 text-center font-[family-name:var(--font-josefin)] text-[0.62rem] tracking-[0.1em] text-[rgba(255,150,200,0.35)]">
+                <div className="rounded-[1px] border border-dashed border-[#F4BBD1] bg-[#FFF0F7]/60 py-3 text-center font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.2em] text-[#A0446C]/55">
                   empty
                 </div>
               ) : (
-                <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {items.map((p) => (
                     <li
                       key={p.id}
-                      className="group relative flex flex-col items-center rounded border border-[rgba(255,100,180,0.15)] bg-[rgba(255,100,180,0.06)] p-1.5"
+                      className="group relative flex flex-col items-center rounded-[1px] bg-[#FFF6FA] p-1.5 shadow-[inset_0_0_0_1px_#FFE4EF,0_0_0_1px_#F4BBD1]"
                     >
                       <div className="relative h-14 w-14">
-                        <Image src={p.url} alt={p.name} fill unoptimized className="object-contain" />
+                        <Image
+                          src={p.url}
+                          alt={p.name}
+                          fill
+                          unoptimized
+                          className="object-contain"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
                       </div>
-                      <div className="mt-1 w-full truncate text-center font-[family-name:var(--font-josefin)] text-[0.55rem] tracking-[0.05em] text-[#FFB0D4]">
+                      <div className="mt-1 w-full truncate text-center font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.1em] text-[#7D2A52]">
                         {p.name}
                       </div>
                       <button
                         type="button"
                         onClick={() => handleDelete(p.id, p.name)}
                         aria-label={`Delete ${p.name}`}
-                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[#FF80C0] bg-[#CC1166] text-[0.6rem] text-white transition hover:scale-110"
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#FF5C93] text-[10px] font-bold text-white shadow-[0_0_0_1px_#B8385C,0_2px_0_rgba(120,40,80,0.35)] active:translate-y-[1px]"
                       >
                         ✕
                       </button>

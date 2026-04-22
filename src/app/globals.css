@@ -330,6 +330,121 @@ html, body {
   vertical-align: middle;
 }
 
+/* Slightly flatter card used inside data-dense admin panels. Same palette
+   as .pass-card but lighter shadow so stacked panels don't compete. */
+.pass-panel {
+  position: relative;
+  background: #FFF6FA;
+  color: #5C1E3D;
+  padding: 18px 20px;
+  border-radius: 2px;
+  image-rendering: pixelated;
+  box-shadow:
+    inset 0  0 0 2px #FFFFFF,
+    inset 0 -2px 0 #FFE4EF,
+    0  0 0 2px #F9B1CE,
+    0  0 0 3px #D98FB4,
+    0  4px 0 rgba(120, 40, 80, 0.28),
+    0  0 18px rgba(255, 120, 180, 0.2);
+}
+.pass-panel-title {
+  margin: 0 0 12px;
+  font-family: var(--font-cormorant), serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.1rem;
+  color: #7D2A52;
+}
+
+/* Compact pink-beveled select — matches .pass-input so form rows align. */
+.pass-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding: 10px 28px 10px 12px;
+  background-color: #FFF0F7;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A0446C' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  color: #5C1E3D;
+  font-family: var(--font-mono-hud);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  border: 0;
+  outline: none;
+  border-radius: 1px;
+  box-shadow:
+    inset 0  0 0 1px #FFD7E6,
+    inset 0  0 0 2px #F9B1CE,
+    0  0 0 1px #D98FB4;
+  cursor: pointer;
+}
+.pass-select:focus {
+  background-color: #FFFFFF;
+  box-shadow:
+    inset 0  0 0 1px #FFFFFF,
+    inset 0  0 0 2px #FF88BB,
+    0  0 0 1px #C04079,
+    0  0 10px rgba(255, 120, 180, 0.45);
+}
+
+/* Compact "ghost" action button — secondary to .pass-button.  Used for
+   header controls (View Lab / Logout) and inline small actions. */
+.pass-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #FFF3F8;
+  color: #7D2A52;
+  font-family: var(--font-mono-hud);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border: 0;
+  border-radius: 1px;
+  cursor: pointer;
+  image-rendering: pixelated;
+  box-shadow:
+    inset 0  0 0 1px #FFE4EF,
+    inset 0 -2px 0 #F2A9C8,
+    0  0 0 1px #D98FB4,
+    0  2px 0 rgba(120, 40, 80, 0.3);
+  transition: box-shadow 0.1s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+.pass-chip:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0  0 0 1px #FFE4EF,
+    inset 0 -1px 0 #F2A9C8,
+    0  0 0 1px #D98FB4,
+    0  0 0 rgba(120, 40, 80, 0.3);
+}
+.pass-chip--danger {
+  color: #B8385C;
+  box-shadow:
+    inset 0  0 0 1px #FFDCE7,
+    inset 0 -2px 0 #F28CB0,
+    0  0 0 1px #C65585,
+    0  2px 0 rgba(120, 40, 80, 0.3);
+}
+
+/* Data row used in admin lists — pink-tinted strip with a bevel. */
+.pass-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #FFF6FA;
+  color: #5C1E3D;
+  border-radius: 1px;
+  box-shadow:
+    inset 0  0 0 1px #FFE4EF,
+    0  0 0 1px #F4BBD1;
+}
+
 /* --- Option B: pixel-art tile frame (inline <img> variant) --------------
    The frame is an inline <img> inside each tile so `image-rendering:
    pixelated` reliably forces nearest-neighbor scaling. This wrapper class

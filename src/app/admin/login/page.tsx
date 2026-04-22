@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
           Admin<br />Console
         </h1>
         <p className="mb-5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.24em] text-[#A0446C]">
-          금고 암호를 입력하세요
+          실험실 암호를 입력하세요
         </p>
 
         <label htmlFor="password" className="pass-label">
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
           disabled={submitting || !password}
           className="pass-button"
         >
-          {submitting ? 'Unlocking…' : 'Unlock Vault →'}
+          {submitting ? 'Unlocking…' : 'Unlock Lab →'}
         </button>
       </form>
     </main>
