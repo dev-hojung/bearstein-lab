@@ -554,21 +554,12 @@ html, body {
     0  0 28px rgba(255, 80, 160, 0.7);
 }
 
-/* Cabinet shelf-hop ellipse — click feedback in SVG land.
-   Keeps the hit-test exactly on the ellipse (no phantom corner clicks).
-   No stroke/outline anywhere — the fill + drop-shadow bloom carry all
-   of the "I touched it / I'm focused / this is active" signal. */
-.shelf-ellipse {
-  transition: fill 0.15s ease, filter 0.15s ease;
-}
-.shelf-ellipse:active {
-  fill: rgba(255, 120, 180, 0.3) !important;
-  filter: drop-shadow(0 0 12px rgba(255, 120, 180, 0.7));
-}
+/* Cabinet shelf-hop ellipse — hit-test only, no visual feedback.
+   The elliptical fill on the component carries the "this is a click
+   target" hint by itself; press / focus states stay quiet so the
+   shelves don't animate under the user. */
 .shelf-ellipse:focus-visible {
   outline: none;
-  fill: rgba(255, 120, 180, 0.18) !important;
-  filter: drop-shadow(0 0 10px rgba(255, 120, 180, 0.5));
 }
 
 /* Respect reduced-motion: skip lab lights-out theatrics. */

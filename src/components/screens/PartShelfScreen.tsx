@@ -132,13 +132,10 @@ export default function PartShelfScreen({
                   cy={50}
                   rx={50}
                   ry={50}
-                  // Inactive cells keep a faint pink wash so the elliptical
-                  // click shape is always discoverable — the curve reads
-                  // visually, not just on :active. Active cell goes deeper.
-                  fill={isActive ? 'rgba(255,120,180,0.28)' : 'rgba(255,180,210,0.08)'}
-                  // Border intentionally omitted — the hit-area + glow carry
-                  // the "this is the active cell" signal without a hard edge
-                  // that would fight the painted glass in the bg.
+                  // Uniform faint wash on every shelf — active cell has no
+                  // extra visual treatment; the current shelf is communicated
+                  // through the URL / HUD label, not a glow.
+                  fill="rgba(255,180,210,0.08)"
                   stroke="transparent"
                   role="button"
                   tabIndex={isActive ? -1 : 0}
@@ -154,19 +151,9 @@ export default function PartShelfScreen({
                   style={{
                     pointerEvents: isActive ? 'none' : 'all',
                     cursor: isActive ? 'default' : 'pointer',
-                    filter: isActive
-                      ? 'drop-shadow(0 0 12px rgba(255,120,180,0.6))'
-                      : 'none',
                   }}
                 />
               </svg>
-              {isActive && (
-                <span
-                  aria-hidden
-                  className="absolute right-[6%] top-1/2 inline-block h-2 w-2 -translate-y-1/2 rounded-full bg-[#FF4E9A] shadow-[0_0_10px_rgba(255,78,154,0.9)]"
-                  style={{ animation: 'led-blink 1.6s ease-in-out infinite' }}
-                />
-              )}
             </div>
           );
         })}
