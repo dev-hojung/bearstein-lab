@@ -105,36 +105,57 @@ export default function PartShelfScreen({
         />
 
         {/* Cabinet shelf click overlay — hop between shelves without going
-            back to the lab scene. Each hitbox is clipped to the glass
-            cylinder's curvature so the dark corners of its bounding box
-            stay un-clickable. Active shelf gets an inner halo + LED. */}
+            back to the lab scene. Each hit area is an SVG <ellipse>, so
+            pointer-events follow the ellipse shape exactly — the dark
+            corners outside the glass cylinder stay non-interactive. */}
         {CABINET_SHELF_ZONES.map((z) => {
           const isActive = z.id === category;
           return (
-            <button
+            <div
               key={z.id}
-              type="button"
-              aria-label={`${LAB_CAT_NAMES_LONG[z.id]}로 이동`}
-              aria-current={isActive ? 'true' : undefined}
-              onClick={() => !isActive && onSwitchCategory(z.id)}
-              disabled={isActive}
-              className={[
-                'absolute z-[11] transition-[filter,transform,box-shadow] duration-150',
-                isActive
-                  ? 'pointer-events-none shadow-[inset_0_0_22px_rgba(255,120,180,0.45),0_0_18px_rgba(255,120,180,0.35)]'
-                  : 'cursor-pointer active:scale-[0.96] active:brightness-125 active:shadow-[inset_0_0_18px_rgba(255,120,180,0.55),0_0_14px_rgba(255,120,180,0.5)]',
-              ].join(' ')}
+              className="pointer-events-none absolute z-[11]"
               style={{
                 left: `${z.x1 * 100}%`,
                 top: `${z.y1 * 100}%`,
                 width: `${(z.x2 - z.x1) * 100}%`,
                 height: `${(z.y2 - z.y1) * 100}%`,
-                // `clip-path: ellipse()` constrains BOTH the visible surface
-                // AND pointer hit-testing to an ellipse — the corners outside
-                // the glass curve are transparent *and* non-interactive.
-                clipPath: 'ellipse(50% 50% at 50% 50%)',
               }}
             >
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="block h-full w-full overflow-visible"
+              >
+                <ellipse
+                  className="shelf-ellipse"
+                  cx={50}
+                  cy={50}
+                  rx={50}
+                  ry={50}
+                  fill={isActive ? 'rgba(255,120,180,0.2)' : 'rgba(255,120,180,0.001)'}
+                  stroke={isActive ? '#FF88BB' : 'transparent'}
+                  strokeWidth={1.5}
+                  vectorEffect="non-scaling-stroke"
+                  role="button"
+                  tabIndex={isActive ? -1 : 0}
+                  aria-label={`${LAB_CAT_NAMES_LONG[z.id]}로 이동`}
+                  aria-current={isActive ? 'true' : undefined}
+                  onClick={() => !isActive && onSwitchCategory(z.id)}
+                  onKeyDown={(e) => {
+                    if (!isActive && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onSwitchCategory(z.id);
+                    }
+                  }}
+                  style={{
+                    pointerEvents: isActive ? 'none' : 'all',
+                    cursor: isActive ? 'default' : 'pointer',
+                    filter: isActive
+                      ? 'drop-shadow(0 0 10px rgba(255,120,180,0.55))'
+                      : 'none',
+                  }}
+                />
+              </svg>
               {isActive && (
                 <span
                   aria-hidden
@@ -142,7 +163,7 @@ export default function PartShelfScreen({
                   style={{ animation: 'led-blink 1.6s ease-in-out infinite' }}
                 />
               )}
-            </button>
+            </div>
           );
         })}
 
