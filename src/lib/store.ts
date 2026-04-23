@@ -79,8 +79,13 @@ export const useLabStore = create<LabState>()(
           set({ cart: cart.filter((c) => c.id !== part.id) });
           return { replaced: null };
         }
-        const replaced = cart.find((c) => c.cat === part.cat) ?? null;
-        set({ cart: [...cart.filter((c) => c.cat !== part.cat), part] });
+        // De-dupe by v2 category when available so ears + eyes can coexist
+        // (both map to v1 `head` but occupy different v2 slots). Legacy
+        // parts without catV2 fall back to v1 cat dedup.
+        const key = (p: Part) => p.catV2 ?? p.cat;
+        const partKey = key(part);
+        const replaced = cart.find((c) => key(c) === partKey) ?? null;
+        set({ cart: [...cart.filter((c) => key(c) !== partKey), part] });
         return { replaced };
       },
 

@@ -37,8 +37,14 @@ export default function PartShelfScreen({
   onCombine,
 }: Props) {
   const v1Cat = V2_TO_V1_CATEGORY[category];
-  const parts = partsMap[v1Cat] ?? [];
   const longName = LAB_CAT_NAMES_LONG[category];
+
+  // Filter parts to those that belong to this v2 slot. Parts without a
+  // catV2 fall back to their v1 bucket so legacy data still shows up.
+  const parts = useMemo(() => {
+    const bucket = partsMap[v1Cat] ?? [];
+    return bucket.filter((p) => (p.catV2 ? p.catV2 === category : true));
+  }, [partsMap, v1Cat, category]);
 
   // Stabilize the slot array so ShelfTile memoization is effective; identity
   // only changes when the underlying parts list does.
@@ -134,6 +140,8 @@ export default function PartShelfScreen({
 }
 
 // ── Floating Combine CTA ────────────────────────────────────────────────
+const REQUIRED_PARTS = 5;
+
 const CombineCta = memo(function CombineCta({
   count,
   onClick,
@@ -141,28 +149,32 @@ const CombineCta = memo(function CombineCta({
   count: number;
   onClick: () => void;
 }) {
-  const disabled = count === 0;
-  const ready = count >= 1;
+  const allFilled = count >= REQUIRED_PARTS;
+  const disabled = !allFilled;
 
   return (
     <motion.button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={disabled ? '부품을 1개 이상 선택해주세요' : '선택한 부품으로 조립 시작'}
+      aria-label={
+        allFilled
+          ? '선택한 5개 부품으로 조립 시작'
+          : `${REQUIRED_PARTS}개 부품을 모두 선택해야 조립할 수 있습니다`
+      }
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.55, duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
       className={[
         'pass-button absolute bottom-4 right-4 z-[20] !w-auto !px-5 !py-2.5',
-        ready ? 'combine-cta-ready' : '',
+        allFilled ? 'combine-cta-ready' : '',
       ].join(' ')}
       style={{ letterSpacing: '0.2em' }}
     >
       <span className="mr-2 inline-block rounded-[1px] bg-[#FFE4EF] px-2 py-0.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.18em] text-[#7D2A52]">
-        {count} / 5 PARTS
+        {count} / {REQUIRED_PARTS} PARTS
       </span>
-      <span>Combine →</span>
+      <span>{allFilled ? 'Combine →' : '부품 전체 선택 필요'}</span>
     </motion.button>
   );
 });

@@ -68,6 +68,38 @@ export const ASM_Z: Record<Category, number> = {
   leg: 1,
 };
 
+// v2 stage layout — 5 slots. `ears` sits just above `eyes` so both can be
+// worn at the same time without fully overlapping the other.
+export const ASM_POS_V2: Record<string, { top: number; w: number }> = {
+  ears: { top: -8, w: 145 },
+  eyes: { top: 18, w: 145 },
+  ghost: { top: 145, w: 135 },
+  hands: { top: 148, w: 200 },
+  shoes: { top: 292, w: 170 },
+};
+
+export const ASM_Z_V2: Record<string, number> = {
+  ears: 5,
+  eyes: 4,
+  ghost: 2,
+  hands: 3,
+  shoes: 1,
+};
+
+/**
+ * Resolve the stage position for a part, preferring its v2 slot when set
+ * so ears/eyes are placed independently; otherwise fall back to v1 cat.
+ */
+export function assemblyPosFor(part: Part): { top: number; w: number } {
+  if (part.catV2 && ASM_POS_V2[part.catV2]) return ASM_POS_V2[part.catV2];
+  return ASM_POS[part.cat];
+}
+
+export function assemblyZFor(part: Part): number {
+  if (part.catV2 && ASM_Z_V2[part.catV2] !== undefined) return ASM_Z_V2[part.catV2];
+  return ASM_Z[part.cat] ?? 1;
+}
+
 export const CATEGORIES: Category[] = ['head', 'body', 'arm', 'leg'];
 
 export const PARTS_DATA: Record<Category, Part[]> = {

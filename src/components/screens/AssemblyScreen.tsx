@@ -4,7 +4,13 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, type PanInfo } from 'framer-motion';
 import { toPng } from 'html-to-image';
-import { ASM_POS, ASM_Z, BACKGROUNDS, CAT_LABEL, type Part } from '@/lib/parts-data';
+import {
+  BACKGROUNDS,
+  CAT_LABEL,
+  assemblyPosFor,
+  assemblyZFor,
+  type Part,
+} from '@/lib/parts-data';
 import { useLabStore, type Offset } from '@/lib/store';
 import BackButton from '@/components/ui/BackButton';
 
@@ -551,8 +557,8 @@ function DraggablePart({
   onSelect: () => void;
   onCommit: (o: Offset) => void;
 }) {
-  const pos = ASM_POS[part.cat];
-  const z = ASM_Z[part.cat] ?? 1;
+  const pos = assemblyPosFor(part);
+  const z = assemblyZFor(part);
 
   const x = useMotionValue(storedOffset.x);
   const y = useMotionValue(storedOffset.y);
