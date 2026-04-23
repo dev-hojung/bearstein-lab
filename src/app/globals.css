@@ -554,12 +554,84 @@ html, body {
     0  0 28px rgba(255, 80, 160, 0.7);
 }
 
-/* Cabinet shelf-hop ellipse — hit-test only, no visual feedback.
-   The elliptical fill on the component carries the "this is a click
-   target" hint by itself; press / focus states stay quiet so the
-   shelves don't animate under the user. */
-.shelf-ellipse:focus-visible {
+/* Cabinet shelf-hop panel — CRT-monitor shape + depth.
+   clip-path carves the silhouette (rounded-corner "old TV" screen)
+   and handles pointer hit-testing; the radial gradient paints a
+   subtle bulge so the panel reads as dimensional glass rather than a
+   flat overlay. All cells render with the same treatment — no
+   active/press highlight. */
+.shelf-screen {
+  border: 0;
+  padding: 0;
+  /* Dramatic CRT bezel — corners carved inward enough to read as a
+     vintage monitor front, not a rectangle with barely-rounded corners. */
+  clip-path: polygon(
+    18% 0%, 82% 0%,
+    93% 5%, 100% 22%,
+    100% 78%, 93% 95%,
+    82% 100%, 18% 100%,
+    7% 95%, 0% 78%,
+    0% 22%, 7% 5%
+  );
+  /* Convex-lit glass: warm highlight on top-center, deeper pink at the
+     bottom edge — this is where the dimensional "CRT bulge" lives. */
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 50% 30%,
+      rgba(255, 240, 248, 0.6) 0%,
+      rgba(255, 210, 228, 0.35) 40%,
+      rgba(255, 170, 205, 0.16) 75%,
+      rgba(255, 140, 190, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 220, 235, 0.22) 0%,
+      rgba(255, 140, 190, 0.15) 100%
+    );
+  /* Spotlight dim: idle shelves sit back so the active one reads as
+     "currently lit". Opacity + brightness ratchet down; the CRT bloom
+     softens in step. */
+  opacity: 0.45;
+  filter: brightness(0.7) drop-shadow(0 0 4px rgba(255, 140, 190, 0.22));
+  transition: opacity 0.25s ease, filter 0.25s ease, background 0.25s ease;
+}
+.shelf-screen:focus-visible {
   outline: none;
+  opacity: 0.9;
+  filter: brightness(1) drop-shadow(0 0 10px rgba(255, 120, 180, 0.65));
+}
+/* Active shelf — CRT "powered on" + full-brightness spotlight.
+   Paired with dim idle state above so the contrast lands. */
+.shelf-screen--active {
+  opacity: 1;
+  background:
+    radial-gradient(
+      ellipse 85% 65% at 50% 30%,
+      rgba(255, 248, 252, 0.88) 0%,
+      rgba(255, 220, 235, 0.55) 40%,
+      rgba(255, 180, 210, 0.28) 75%,
+      rgba(255, 140, 190, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 230, 240, 0.32) 0%,
+      rgba(255, 140, 190, 0.22) 100%
+    );
+  animation: shelf-screen-pulse 2.4s ease-in-out infinite;
+}
+@keyframes shelf-screen-pulse {
+  0%, 100% {
+    filter:
+      brightness(1)
+      drop-shadow(0 0 10px rgba(255, 120, 180, 0.7))
+      drop-shadow(0 0 22px rgba(255, 100, 170, 0.35));
+  }
+  50% {
+    filter:
+      brightness(1.05)
+      drop-shadow(0 0 18px rgba(255, 120, 180, 0.95))
+      drop-shadow(0 0 34px rgba(255, 100, 170, 0.55));
+  }
 }
 
 /* Respect reduced-motion: skip lab lights-out theatrics. */

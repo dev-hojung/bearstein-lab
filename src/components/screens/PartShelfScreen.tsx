@@ -20,6 +20,7 @@ import { useLabStore } from '@/lib/store';
 type Props = {
   category: LabCategory;
   partsMap: Record<Category, Part[]>;
+  partsLoading: boolean;
   onBack: () => void;
   onCombine: () => void;
   onSwitchCategory: (next: LabCategory) => void;
@@ -32,9 +33,18 @@ const TILE_COUNT = TILE_COLS * TILE_ROWS;
 // Grid position — right side of the aspect-locked stage, past the cabinet.
 const GRID_POSE = { left: 0.5, top: 0.2, width: 0.45, height: 0.62 };
 
+// ShelfTile motion props — hoisted to module scope so every render keeps
+// the same object references and framer-motion doesn't replay the
+// entrance animation just because the parent re-rendered.
+const TILE_INITIAL = { opacity: 0, scale: 0.8, filter: 'blur(4px)' } as const;
+const TILE_ANIMATE = { opacity: 1, scale: 1, filter: 'blur(0px)' } as const;
+const TILE_TAP = { scale: 0.94 } as const;
+const TILE_EASE = [0.16, 1, 0.3, 1] as const;
+
 export default function PartShelfScreen({
   category,
   partsMap,
+  partsLoading,
   onBack,
   onCombine,
   onSwitchCategory,
@@ -73,7 +83,7 @@ export default function PartShelfScreen({
         type="button"
         onClick={onBack}
         aria-label="실험실로 돌아가기"
-        className="absolute bottom-4 left-4 z-[20] rounded-md border-2 border-[#FF88BB]/60 bg-[rgba(20,5,16,0.75)] px-3 py-1.5 font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.22em] text-[#FFB0D4] shadow-[0_0_10px_rgba(255,100,180,0.25)] backdrop-blur-sm transition active:scale-[0.95] active:bg-[rgba(40,10,30,0.9)]"
+        className="pass-chip absolute bottom-5 left-5 z-[20]"
       >
         ← BACK
       </button>
@@ -104,89 +114,68 @@ export default function PartShelfScreen({
           style={{ imageRendering: 'pixelated' }}
         />
 
-        {/* Cabinet shelf click overlay — hop between shelves without going
-            back to the lab scene. Each hit area is an SVG <ellipse>, so
-            pointer-events follow the ellipse shape exactly — the dark
-            corners outside the glass cylinder stay non-interactive. */}
+        {/* Cabinet shelf click overlay — CRT-monitor-styled panels with
+            rounded corners + radial highlight for dimensional depth.
+            `clip-path` owns the shape (and pointer hit-testing). */}
         {CABINET_SHELF_ZONES.map((z) => {
           const isActive = z.id === category;
           return (
-            <div
+            <button
               key={z.id}
-              className="pointer-events-none absolute z-[11]"
+              type="button"
+              aria-label={`${LAB_CAT_NAMES_LONG[z.id]}로 이동`}
+              aria-current={isActive ? 'true' : undefined}
+              onClick={() => !isActive && onSwitchCategory(z.id)}
+              disabled={isActive}
+              className={[
+                'shelf-screen absolute z-[11]',
+                isActive
+                  ? 'shelf-screen--active pointer-events-none'
+                  : 'cursor-pointer',
+              ].join(' ')}
               style={{
                 left: `${z.x1 * 100}%`,
                 top: `${z.y1 * 100}%`,
                 width: `${(z.x2 - z.x1) * 100}%`,
                 height: `${(z.y2 - z.y1) * 100}%`,
               }}
-            >
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="block h-full w-full overflow-visible"
-              >
-                <ellipse
-                  className="shelf-ellipse"
-                  cx={50}
-                  cy={50}
-                  rx={50}
-                  ry={50}
-                  // Uniform faint wash on every shelf — active cell has no
-                  // extra visual treatment; the current shelf is communicated
-                  // through the URL / HUD label, not a glow.
-                  fill="rgba(255,180,210,0.08)"
-                  stroke="transparent"
-                  role="button"
-                  tabIndex={isActive ? -1 : 0}
-                  aria-label={`${LAB_CAT_NAMES_LONG[z.id]}로 이동`}
-                  aria-current={isActive ? 'true' : undefined}
-                  onClick={() => !isActive && onSwitchCategory(z.id)}
-                  onKeyDown={(e) => {
-                    if (!isActive && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault();
-                      onSwitchCategory(z.id);
-                    }
-                  }}
-                  style={{
-                    pointerEvents: isActive ? 'none' : 'all',
-                    cursor: isActive ? 'default' : 'pointer',
-                  }}
-                />
-              </svg>
-            </div>
+            />
           );
         })}
 
-        {/* Tile grid — keyed by category so switching shelves exits the
-            old grid and replays the stagger for the new one. */}
+        {/* Tile grid — mounts only AFTER the initial parts fetch settles,
+            so the entrance stagger fires against real data instead of
+            burning frames on empty slots. Keyed by category so switching
+            shelves still replays the stagger for the new one. */}
         <AnimatePresence mode="wait">
-          <motion.div
-            key={category}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="absolute z-[10] grid grid-cols-5 grid-rows-3 gap-[1.3%]"
-            style={{
-              left: `${GRID_POSE.left * 100}%`,
-              top: `${GRID_POSE.top * 100}%`,
-              width: `${GRID_POSE.width * 100}%`,
-              height: `${GRID_POSE.height * 100}%`,
-            }}
-          >
-            {slots.map((part, i) => (
-              <ShelfTile
-                key={part ? part.id : `empty-${category}-${i}`}
-                part={part}
-                index={i}
-              />
-            ))}
-          </motion.div>
+          {!partsLoading && (
+            <motion.div
+              key={category}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="absolute z-[10] grid grid-cols-5 grid-rows-3 gap-[1.3%]"
+              style={{
+                left: `${GRID_POSE.left * 100}%`,
+                top: `${GRID_POSE.top * 100}%`,
+                width: `${GRID_POSE.width * 100}%`,
+                height: `${GRID_POSE.height * 100}%`,
+              }}
+            >
+              {slots.map((part, i) => (
+                <ShelfTile
+                  key={part ? part.id : `empty-${category}-${i}`}
+                  part={part}
+                  index={i}
+                />
+              ))}
+            </motion.div>
+          )}
         </AnimatePresence>
 
-        {/* Category HUD — right edge, top. Keyed so text swaps with the
-            shelf switch. */}
+        {/* Category HUD — pastel pass-panel label. Title reads as the
+            star of the label; code + count whisper below. */}
         <AnimatePresence mode="wait">
           <motion.div
             key={category}
@@ -194,14 +183,14 @@ export default function PartShelfScreen({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -12 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute z-[12] flex items-center gap-2 rounded-md border border-[#FF88BB]/50 bg-[rgba(20,5,16,0.7)] px-3 py-1 backdrop-blur-sm"
-            style={{ right: '5%', top: '7%' }}
+            className="pass-chip absolute z-[12]"
+            style={{ right: '5%', top: '7%', cursor: 'default' }}
           >
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#FF4E9A] shadow-[0_0_6px_rgba(255,78,154,0.85)]" />
-            <span className="font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.28em] text-[#FFD5E8]">
+            <span className="pass-hud-dot" />
+            <span className="font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.28em] text-[#7D2A52]">
               {category.toUpperCase()}
             </span>
-            <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.18em] text-[#FFB0D4]/70">
+            <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.18em] text-[#A0446C]/80">
               {longName}
             </span>
           </motion.div>
@@ -214,11 +203,11 @@ export default function PartShelfScreen({
 }
 
 // ── Floating Combine CTA ────────────────────────────────────────────────
-// The shelf advertises 5 slots (ears / eyes / ghost / hands / shoes), so
-// the cart must hold 5 distinct items before Combine unlocks. Cart dedup
-// uses `catV2 ?? cat`, so this only works once every environment has the
-// `cat_v2` column populated (see supabase/RUN_ME_NOW.sql).
-const REQUIRED_PARTS = 5;
+// TEMPORARY: the long-term contract is 5 (one per v2 shelf), but until
+// supabase/RUN_ME_NOW.sql runs and the cart dedupes by `catV2 ?? cat`,
+// v1 dedup caps the cart at 4. Keeping this at 4 so Combine is reachable
+// during the rollout. Bump back to 5 once every environment is migrated.
+const REQUIRED_PARTS = 4;
 
 const CombineCta = memo(function CombineCta({
   count,
@@ -265,10 +254,15 @@ const ShelfTile = memo(function ShelfTile({
   part: Part | null;
   index: number;
 }) {
+  // Primitive deps — part.id is a string (or undefined), so selector +
+  // click callbacks stay identity-stable even if the `part` object
+  // reference flickers on a parent re-render.
+  const partId = part?.id;
+
   const inCart = useLabStore(
     useCallback(
-      (s) => (part ? s.cart.some((c) => c.id === part.id) : false),
-      [part],
+      (s) => (partId ? s.cart.some((c) => c.id === partId) : false),
+      [partId],
     ),
   );
 
@@ -290,6 +284,13 @@ const ShelfTile = memo(function ShelfTile({
   const row = Math.floor(index / TILE_COLS);
   const delay = 0.3 + (col + row) * 0.05;
 
+  // Memo the transition object so framer-motion sees a stable reference
+  // and doesn't re-trigger the entrance animation on re-render.
+  const transition = useMemo(
+    () => ({ delay, duration: 0.35, ease: TILE_EASE }),
+    [delay],
+  );
+
   const spriteSrc = inCart
     ? '/images/ui/tile-frame-active.svg'
     : '/images/ui/tile-frame.svg';
@@ -301,10 +302,10 @@ const ShelfTile = memo(function ShelfTile({
       disabled={!part}
       aria-label={part ? part.name : 'empty shelf slot'}
       aria-pressed={inCart}
-      initial={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
-      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-      transition={{ delay, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      whileTap={part ? { scale: 0.94 } : undefined}
+      initial={TILE_INITIAL}
+      animate={TILE_ANIMATE}
+      transition={transition}
+      whileTap={part ? TILE_TAP : undefined}
       className={[
         'tile-sprite-glow group relative flex aspect-square items-center justify-center disabled:cursor-default',
         inCart ? 'tile-sprite-glow--active' : '',

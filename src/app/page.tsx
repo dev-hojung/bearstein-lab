@@ -31,6 +31,7 @@ export default function Page() {
   const hydrated = useLabStore((s) => s.hydrated);
   const show = useLabStore((s) => s.show);
   const [partsMap, setPartsMap] = useState<Record<Category, Part[]>>(EMPTY);
+  const [partsLoading, setPartsLoading] = useState(true);
   const [cat, setCat] = useState<LabCategory | null>(null);
   const mainRef = useRef<HTMLElement>(null);
   // Flag: suppresses URL writes during the initial URL → state hydration so
@@ -45,7 +46,8 @@ export default function Page() {
           setPartsMap(data.parts);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPartsLoading(false));
   }, []);
 
   // URL → state: once the store has hydrated, read ?s= and ?cat= and drive
@@ -156,6 +158,7 @@ export default function Page() {
             <PartShelfScreen
               category={cat}
               partsMap={partsMap}
+              partsLoading={partsLoading}
               onBack={handleBackFromShelf}
               onCombine={handleGoToAssembly}
               onSwitchCategory={handleSwitchCategory}
