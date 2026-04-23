@@ -122,6 +122,14 @@ export default function Page() {
     });
   }, [show]);
 
+  const handleGoToAssembly = useCallback(() => {
+    const target = mainRef.current;
+    if (target) {
+      runPixelGlitch(target, { duration: 520 });
+    }
+    show('s4');
+  }, [show]);
+
   return (
     <main
       ref={mainRef}
@@ -136,6 +144,7 @@ export default function Page() {
               category={cat}
               partsMap={partsMap}
               onBack={handleBackFromShelf}
+              onCombine={handleGoToAssembly}
             />
           )}
           {screen === 's4' && <AssemblyScreen />}

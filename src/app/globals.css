@@ -308,6 +308,30 @@ html, body {
   opacity: 0.55;
   cursor: not-allowed;
 }
+/* Ready-state CTA: gentle pink pulse on the box-shadow glow so the
+   Combine button calls attention once the first part is picked. */
+.combine-cta-ready {
+  animation: combine-cta-pulse 2.4s ease-in-out infinite;
+}
+@keyframes combine-cta-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0  0 0 2px #FFE4EF,
+      inset 0 -3px 0 #D98FB4,
+      0  0 0 2px #C06C96,
+      0  3px 0 rgba(120, 40, 80, 0.4),
+      0  0 14px rgba(255, 140, 190, 0.35);
+  }
+  50% {
+    box-shadow:
+      inset 0  0 0 2px #FFFFFF,
+      inset 0 -3px 0 #D98FB4,
+      0  0 0 2px #C06C96,
+      0  3px 0 rgba(120, 40, 80, 0.4),
+      0  0 26px rgba(255, 100, 170, 0.75);
+  }
+}
+
 .pass-error {
   color: #C04079;
   background: #FFE4EF;

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { motion } from 'framer-motion';
 
@@ -19,11 +19,21 @@ type Props = {
   onPick: (cat: LabCategory) => void;
 };
 
+// Must stay ≥ `--animate-lights-out` duration + its 0.15s delay, so the
+// shelf buttons don't accept clicks until the room is actually dark.
+const LIGHTS_OUT_MS = 1900;
+
 export default function LabSceneScreen({ onPick }: Props) {
   const [isExiting, setIsExiting] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setIsReady(true), LIGHTS_OUT_MS);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const handleShelfPick = (z: ShelfZone) => {
-    if (isExiting) return;
+    if (!isReady || isExiting) return;
     setIsExiting(true);
     onPick(z.id);
   };
@@ -77,8 +87,8 @@ export default function LabSceneScreen({ onPick }: Props) {
             type="button"
             aria-label={LAB_CAT_NAMES_LONG[z.id]}
             onClick={() => handleShelfPick(z)}
-            disabled={isExiting}
-            className="absolute rounded-sm transition-[filter,transform] duration-75 active:scale-[0.92] active:brightness-125 active:drop-shadow-[0_0_10px_rgba(255,100,160,0.8)] disabled:pointer-events-none"
+            disabled={!isReady || isExiting}
+            className="absolute rounded-sm transition-[filter,transform] duration-75 active:scale-[0.92] active:brightness-125 active:drop-shadow-[0_0_10px_rgba(255,100,160,0.8)] disabled:pointer-events-none disabled:cursor-wait"
             style={{
               left: `${z.x1 * 100}%`,
               top: `${z.y1 * 100}%`,

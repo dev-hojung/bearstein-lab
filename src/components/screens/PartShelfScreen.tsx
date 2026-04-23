@@ -20,6 +20,7 @@ type Props = {
   category: LabCategory;
   partsMap: Record<Category, Part[]>;
   onBack: () => void;
+  onCombine: () => void;
 };
 
 const TILE_COLS = 5;
@@ -29,7 +30,12 @@ const TILE_COUNT = TILE_COLS * TILE_ROWS;
 // Grid position — right side of the aspect-locked stage, past the cabinet.
 const GRID_POSE = { left: 0.5, top: 0.2, width: 0.45, height: 0.62 };
 
-export default function PartShelfScreen({ category, partsMap, onBack }: Props) {
+export default function PartShelfScreen({
+  category,
+  partsMap,
+  onBack,
+  onCombine,
+}: Props) {
   const v1Cat = V2_TO_V1_CATEGORY[category];
   const parts = partsMap[v1Cat] ?? [];
   const longName = LAB_CAT_NAMES_LONG[category];
@@ -40,6 +46,10 @@ export default function PartShelfScreen({ category, partsMap, onBack }: Props) {
     () => Array.from({ length: TILE_COUNT }, (_, i) => parts[i] ?? null),
     [parts],
   );
+
+  // Scalar selector — only re-renders the CTA (not the whole screen or the
+  // 15 tiles) when cart size changes.
+  const cartCount = useLabStore((s) => s.cart.length);
 
   return (
     <motion.section
@@ -58,6 +68,11 @@ export default function PartShelfScreen({ category, partsMap, onBack }: Props) {
       >
         ← BACK
       </button>
+
+      {/* COMBINE CTA — floats bottom-right; disabled until the user has
+          selected at least one part. Click triggers the page-level glitch
+          + transition to the Assembly screen. */}
+      <CombineCta count={cartCount} onClick={onCombine} />
 
       <div
         className="relative"
@@ -118,9 +133,41 @@ export default function PartShelfScreen({ category, partsMap, onBack }: Props) {
   );
 }
 
+// ── Floating Combine CTA ────────────────────────────────────────────────
+const CombineCta = memo(function CombineCta({
+  count,
+  onClick,
+}: {
+  count: number;
+  onClick: () => void;
+}) {
+  const disabled = count === 0;
+  const ready = count >= 1;
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={disabled ? '부품을 1개 이상 선택해주세요' : '선택한 부품으로 조립 시작'}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.55, duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+      className={[
+        'pass-button absolute bottom-4 right-4 z-[20] !w-auto !px-5 !py-2.5',
+        ready ? 'combine-cta-ready' : '',
+      ].join(' ')}
+      style={{ letterSpacing: '0.2em' }}
+    >
+      <span className="mr-2 inline-block rounded-[1px] bg-[#FFE4EF] px-2 py-0.5 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.18em] text-[#7D2A52]">
+        {count} / 5 PARTS
+      </span>
+      <span>Combine →</span>
+    </motion.button>
+  );
+});
+
 // ── Individual tile — pixel-art pink frame + part image overlay.
-// Memoized and relies on a scalar `inCart` selector so a change to any
-// OTHER tile's cart state doesn't re-render every tile in the grid.
 const ShelfTile = memo(function ShelfTile({
   part,
   index,
@@ -128,8 +175,6 @@ const ShelfTile = memo(function ShelfTile({
   part: Part | null;
   index: number;
 }) {
-  // Scalar selector: compares with Object.is, so unrelated cart changes
-  // return the same boolean and skip re-render.
   const inCart = useLabStore(
     useCallback(
       (s) => (part ? s.cart.some((c) => c.id === part.id) : false),
@@ -137,7 +182,6 @@ const ShelfTile = memo(function ShelfTile({
     ),
   );
 
-  // Stable action/setter refs — no render-time work.
   const handleClick = useCallback(() => {
     if (!part) return;
     const { addOrReplace, setToast } = useLabStore.getState();
@@ -176,8 +220,6 @@ const ShelfTile = memo(function ShelfTile({
         inCart ? 'tile-sprite-glow--active' : '',
       ].join(' ')}
     >
-      {/* Pixel-art frame as an inline <img> so `image-rendering: pixelated`
-          applies reliably across browsers. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={spriteSrc}
