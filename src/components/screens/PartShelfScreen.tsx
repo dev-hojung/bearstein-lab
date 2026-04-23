@@ -132,7 +132,10 @@ export default function PartShelfScreen({
                   cy={50}
                   rx={50}
                   ry={50}
-                  fill={isActive ? 'rgba(255,120,180,0.22)' : 'rgba(255,120,180,0.001)'}
+                  // Inactive cells keep a faint pink wash so the elliptical
+                  // click shape is always discoverable — the curve reads
+                  // visually, not just on :active. Active cell goes deeper.
+                  fill={isActive ? 'rgba(255,120,180,0.28)' : 'rgba(255,180,210,0.08)'}
                   // Border intentionally omitted — the hit-area + glow carry
                   // the "this is the active cell" signal without a hard edge
                   // that would fight the painted glass in the bg.
