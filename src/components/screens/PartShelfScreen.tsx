@@ -132,10 +132,11 @@ export default function PartShelfScreen({
                   cy={50}
                   rx={50}
                   ry={50}
-                  fill={isActive ? 'rgba(255,120,180,0.2)' : 'rgba(255,120,180,0.001)'}
-                  stroke={isActive ? '#FF88BB' : 'transparent'}
-                  strokeWidth={1.5}
-                  vectorEffect="non-scaling-stroke"
+                  fill={isActive ? 'rgba(255,120,180,0.22)' : 'rgba(255,120,180,0.001)'}
+                  // Border intentionally omitted — the hit-area + glow carry
+                  // the "this is the active cell" signal without a hard edge
+                  // that would fight the painted glass in the bg.
+                  stroke="transparent"
                   role="button"
                   tabIndex={isActive ? -1 : 0}
                   aria-label={`${LAB_CAT_NAMES_LONG[z.id]}로 이동`}
@@ -151,7 +152,7 @@ export default function PartShelfScreen({
                     pointerEvents: isActive ? 'none' : 'all',
                     cursor: isActive ? 'default' : 'pointer',
                     filter: isActive
-                      ? 'drop-shadow(0 0 10px rgba(255,120,180,0.55))'
+                      ? 'drop-shadow(0 0 12px rgba(255,120,180,0.6))'
                       : 'none',
                   }}
                 />
