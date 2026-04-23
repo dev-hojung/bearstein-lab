@@ -5,12 +5,12 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, type PanInfo } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import {
-  BACKGROUNDS,
   CAT_LABEL,
   assemblyPosFor,
   assemblyZFor,
   type Part,
 } from '@/lib/parts-data';
+import { LAB_SCENE_ASSETS } from '@/lib/lab-scene-data';
 import { useLabStore, type Offset } from '@/lib/store';
 import BackButton from '@/components/ui/BackButton';
 
@@ -100,45 +100,49 @@ export default function AssemblyScreen() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 overflow-hidden bg-[#FFD1DC]"
+      className="fixed inset-0 h-[100dvh] w-[100dvw] overflow-hidden bg-[#0d0510]"
     >
       <Image
-        src={BACKGROUNDS.s4}
+        src={LAB_SCENE_ASSETS.dark}
         alt=""
+        aria-hidden
         fill
+        priority
         unoptimized
         sizes="100vw"
-        className="z-0 object-cover object-center"
-        style={{ filter: 'hue-rotate(300deg) saturate(1.4) brightness(0.6)' }}
+        className="pointer-events-none z-0 object-cover opacity-30"
+        style={{ imageRendering: 'pixelated' }}
       />
-      <div className="scan-ov pointer-events-none absolute inset-0 z-[1]" />
+      <div className="vignette-ov pointer-events-none absolute inset-0 z-[1]" />
+      <div className="scan-ov pointer-events-none absolute inset-0 z-[1] opacity-30" />
 
       <div className="lab-scroll absolute inset-0 z-[2] flex flex-col overflow-y-auto p-3 lg:overflow-hidden">
-        <header className="mb-2.5 flex flex-shrink-0 flex-wrap items-center gap-2">
+        <header className="mb-3 flex flex-shrink-0 flex-wrap items-center gap-2">
           <BackButton />
-          <h1
-            className="font-[family-name:var(--font-cormorant)] italic font-medium text-[#C06080]"
-            style={{
-              fontSize: 'clamp(1.1rem,2.6vw,1.6rem)',
-              letterSpacing: '0.04em',
-              textShadow: '0 0 12px rgba(255,100,180,0.6)',
-            }}
-          >
-            Assembly Result
-          </h1>
-          <div className="ml-auto flex gap-2">
+          <div className="flex flex-col leading-tight">
+            <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.3em] text-[#FFB0D4]">
+              <span className="pass-hud-dot" />
+              OPERATOR PASS · ASSEMBLY DECK
+            </span>
+            <h1
+              className="font-[family-name:var(--font-cormorant)] italic font-medium text-[#FFE0F0]"
+              style={{
+                fontSize: 'clamp(1.1rem,2.4vw,1.5rem)',
+                letterSpacing: '0.04em',
+                textShadow: '0 0 12px rgba(255,120,180,0.55)',
+              }}
+            >
+              Bearstein Assembly
+            </h1>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => {
                 setPreviewMode((p) => !p);
                 if (!previewMode) setSelectedId(null);
               }}
-              className={[
-                'cursor-pointer rounded border px-3 py-1.5 font-[family-name:var(--font-josefin)] text-[0.7rem] font-light tracking-[0.12em] transition',
-                previewMode
-                  ? 'border-[#A0FFB8] bg-[rgba(80,200,120,0.2)] text-[#A0FFB8]'
-                  : 'border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] text-[#FFB0D4] hover:bg-[rgba(255,30,130,0.3)] hover:text-[#FFE0F0]',
-              ].join(' ')}
+              className="pass-chip"
               aria-label={previewMode ? 'Exit preview mode' : 'Enter preview mode'}
               aria-pressed={previewMode}
             >
@@ -147,7 +151,7 @@ export default function AssemblyScreen() {
             <button
               type="button"
               onClick={handleReset}
-              className="cursor-pointer rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-3 py-1.5 font-[family-name:var(--font-josefin)] text-[0.7rem] font-light tracking-[0.12em] text-[#FFB0D4] transition hover:bg-[rgba(255,30,130,0.3)] hover:text-[#FFE0F0] active:bg-[rgba(255,30,130,0.4)]"
+              className="pass-chip"
               aria-label="Reset part positions"
             >
               ↺ Reset
@@ -156,10 +160,11 @@ export default function AssemblyScreen() {
               type="button"
               onClick={handleDownload}
               disabled={downloading || cart.length === 0}
-              className="cursor-pointer rounded border border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] px-3 py-1.5 font-[family-name:var(--font-josefin)] text-[0.7rem] tracking-[0.12em] text-[#FFE0F0] shadow-[0_0_14px_rgba(204,17,102,0.4)] transition hover:from-[#EE2288] hover:to-[#CC1166] disabled:opacity-50 disabled:hover:from-[#CC1166] disabled:hover:to-[#880044]"
+              className="pass-button pass-button--primary !w-auto !px-4 !py-2"
               aria-label="Save assembly as PNG"
+              style={{ letterSpacing: '0.18em' }}
             >
-              {downloading ? '⏳ Saving…' : '💾 Save PNG'}
+              {downloading ? 'Saving…' : '💾 Save PNG'}
             </button>
           </div>
         </header>
@@ -167,10 +172,18 @@ export default function AssemblyScreen() {
         <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1 lg:flex-row lg:overflow-hidden">
           {/* ── Stage ── */}
           <div className="flex flex-shrink-0 flex-col items-center gap-3">
-            {/* Outer wrapper provides the visible frame; capture target (inner) is transparent */}
+            {/* Outer wrapper — dark panel for part contrast, framed by a
+                pink halo glow so it reads as a spotlit workbench. Capture
+                target (inner) stays transparent for PNG export. */}
             <div
-              className="relative flex-shrink-0 overflow-hidden rounded-lg border border-[rgba(255,100,180,0.2)] bg-[rgba(20,0,25,0.5)]"
-              style={{ width: STAGE_W, height: STAGE_H, maxWidth: '92vw' }}
+              className="relative flex-shrink-0 overflow-hidden rounded-lg border border-[#FF88BB]/35 bg-[rgba(12,4,18,0.85)]"
+              style={{
+                width: STAGE_W,
+                height: STAGE_H,
+                maxWidth: '92vw',
+                boxShadow:
+                  '0 0 0 2px rgba(216,143,180,0.4), 0 0 24px rgba(255,120,180,0.35), 0 0 60px rgba(255,80,160,0.2)',
+              }}
             >
               {/* Inner — TRANSPARENT background so PNG export has no fill */}
               <div
@@ -195,8 +208,8 @@ export default function AssemblyScreen() {
                 ))}
 
                 {cart.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center px-4 text-center font-[family-name:var(--font-josefin)] text-xs font-extralight tracking-[0.12em] text-[rgba(255,150,200,0.55)]">
-                    No parts on stage
+                  <div className="absolute inset-0 flex items-center justify-center px-4 text-center font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.22em] text-[#FFB0D4]/60">
+                    STAGE EMPTY · SELECT PARTS
                   </div>
                 )}
               </div>
@@ -204,17 +217,17 @@ export default function AssemblyScreen() {
 
             {/* ── Nudge & scale controls (desktop only — mobile uses floating FABs below) ── */}
             {!previewMode && selectedPart && (
-              <div className="hidden flex-col items-center gap-1.5 rounded-md border border-[rgba(255,100,180,0.25)] bg-[rgba(20,0,25,0.85)] p-2 backdrop-blur-sm lg:flex">
-                <div className="font-[family-name:var(--font-josefin)] text-[0.62rem] font-light tracking-[0.12em] text-[#FFB0D4]">
-                  Adjust: <span className="text-[#FFE0F0]">{selectedPart.name}</span>
+              <div className="hidden flex-col items-center gap-1.5 rounded-md border border-[#FF88BB]/40 bg-[rgba(12,4,18,0.88)] p-2 shadow-[0_0_14px_rgba(255,120,180,0.2)] backdrop-blur-sm lg:flex">
+                <div className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.2em] text-[#FFB0D4]">
+                  ADJUST · <span className="text-[#FFE0F0]">{selectedPart.name}</span>
                   {selectedOffset &&
                     (selectedOffset.x !== 0 || selectedOffset.y !== 0) && (
-                      <span className="ml-1.5 text-[#A0FFB8]">
+                      <span className="ml-2 text-[#A0FFB8]">
                         pos({selectedOffset.x}, {selectedOffset.y})
                       </span>
                     )}
                   {selectedScale !== 1 && (
-                    <span className="ml-1.5 text-[#A0FFB8]">
+                    <span className="ml-2 text-[#A0FFB8]">
                       ×{selectedScale.toFixed(2)}
                     </span>
                   )}
@@ -246,8 +259,8 @@ export default function AssemblyScreen() {
                 </div>
 
                 {/* Scale row */}
-                <div className="mt-1 flex items-center gap-1.5 border-t border-[rgba(255,100,180,0.2)] pt-1.5">
-                  <span className="font-[family-name:var(--font-josefin)] text-[0.55rem] tracking-[0.1em] text-[rgba(255,150,200,0.7)]">
+                <div className="mt-1 flex items-center gap-1.5 border-t border-[#FF88BB]/25 pt-1.5">
+                  <span className="font-[family-name:var(--font-mono-hud)] text-[9px] tracking-[0.2em] text-[#FFB0D4]/80">
                     SIZE
                   </span>
                   <NudgeBtn label="−" onClick={() => adjustScale(-0.05)} aria="Shrink 5%" />
@@ -255,7 +268,7 @@ export default function AssemblyScreen() {
                   <button
                     type="button"
                     onClick={() => selectedId && setPartScale(selectedId, 1)}
-                    className="cursor-pointer rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] px-1.5 py-0.5 font-[family-name:var(--font-josefin)] text-[0.55rem] tracking-[0.08em] text-[#FFB0D4] transition hover:bg-[rgba(255,30,130,0.35)] hover:text-[#FFE0F0]"
+                    className="cursor-pointer rounded-[1px] border border-[#FF88BB]/50 bg-[rgba(255,140,190,0.12)] px-1.5 py-0.5 font-[family-name:var(--font-mono-hud)] text-[9px] tracking-[0.1em] text-[#FFE0F0] transition active:translate-y-[1px]"
                     aria-label="Reset scale to 100%"
                   >
                     {(selectedScale * 100).toFixed(0)}%
@@ -266,20 +279,22 @@ export default function AssemblyScreen() {
               </div>
             )}
 
-            <p className="max-w-[300px] text-center font-[family-name:var(--font-josefin)] text-[0.62rem] font-extralight leading-relaxed tracking-[0.1em] text-[rgba(255,150,200,0.6)]">
+            <p className="max-w-[300px] text-center font-[family-name:var(--font-mono-hud)] text-[10px] leading-relaxed tracking-[0.16em] text-[#FFB0D4]/70">
               {previewMode
-                ? 'Preview mode · Tap 👁 to edit again'
-                : 'Tap part = select · Empty area = deselect · 👁 = clean view'}
+                ? 'PREVIEW MODE · TAP 👁 TO EDIT'
+                : 'TAP PART = SELECT · EMPTY = DESELECT · 👁 = CLEAN VIEW'}
             </p>
           </div>
 
           {/* ── Info panel ── */}
-          <div className="lab-scroll flex flex-col gap-2 p-1 lg:flex-1 lg:overflow-y-auto">
+          <div className="lab-scroll flex flex-col gap-1.5 p-1 lg:flex-1 lg:overflow-y-auto">
             {cart.length === 0 ? (
-              <div className="px-3 py-8 text-center font-[family-name:var(--font-josefin)] text-xs font-extralight leading-8 tracking-[0.12em] text-[rgba(255,150,200,0.6)]">
-                No parts selected.
+              <div className="rounded-[1px] border-2 border-dashed border-[#F9B1CE]/40 bg-[rgba(255,246,250,0.08)] px-3 py-8 text-center font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.18em] text-[#FFB0D4]/70">
+                NO PARTS SELECTED
                 <br />
-                Add parts to your cart first.
+                <span className="text-[10px] tracking-[0.14em] text-[#FFB0D4]/50">
+                  · pick parts from the shelf
+                </span>
               </div>
             ) : (
               cart.map((part) => {
@@ -294,36 +309,39 @@ export default function AssemblyScreen() {
                     key={part.id}
                     onClick={() => setSelectedId(part.id)}
                     className={[
-                      'flex w-full items-center gap-2 rounded border px-2.5 py-1.5 text-left transition',
+                      'pass-row group w-full text-left transition-[box-shadow] duration-150',
                       isSel
-                        ? 'border-[#FF80C0] bg-[rgba(80,0,60,0.7)]'
-                        : 'border-[rgba(255,100,180,0.15)] bg-[rgba(255,100,180,0.06)] hover:border-[rgba(255,100,180,0.35)]',
+                        ? 'ring-2 ring-[#FF3F8F] ring-offset-[1px] ring-offset-[#FFF6FA]'
+                        : '',
                     ].join(' ')}
                   >
-                    <Image
-                      src={part.url}
-                      alt={part.name}
-                      width={44}
-                      height={38}
-                      className="h-[38px] w-11 flex-shrink-0 object-contain"
-                      unoptimized
-                    />
-                    <div className="flex-1">
-                      <div className="font-[family-name:var(--font-josefin)] text-[0.72rem] font-light tracking-[0.06em] text-[#FFB0D4]">
-                        {part.name}
-                      </div>
-                      <div className="mt-0.5 font-[family-name:var(--font-josefin)] text-[0.6rem] font-extralight tracking-[0.18em] text-[rgba(255,150,200,0.55)]">
-                        {CAT_LABEL[part.cat]} Part
-                        {moved && (
-                          <span className="ml-1.5 text-[#A0FFB8]">
-                            · ({offset!.x}, {offset!.y})
-                          </span>
-                        )}
-                        {scaled && (
-                          <span className="ml-1.5 text-[#A0FFB8]">
-                            · ×{sc.toFixed(2)}
-                          </span>
-                        )}
+                    <div className="flex w-full items-center gap-2.5">
+                      <Image
+                        src={part.url}
+                        alt={part.name}
+                        width={44}
+                        height={38}
+                        className="h-[38px] w-11 flex-shrink-0 object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                        unoptimized
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-[family-name:var(--font-mono-hud)] text-[11px] tracking-[0.12em] text-[#5C1E3D] truncate">
+                          {part.name}
+                        </div>
+                        <div className="mt-0.5 font-[family-name:var(--font-mono-hud)] text-[9px] tracking-[0.18em] text-[#A0446C]">
+                          {CAT_LABEL[part.cat]} PART
+                          {moved && (
+                            <span className="ml-1.5 text-[#3F8B5A]">
+                              · ({offset!.x}, {offset!.y})
+                            </span>
+                          )}
+                          {scaled && (
+                            <span className="ml-1.5 text-[#3F8B5A]">
+                              · ×{sc.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -349,11 +367,11 @@ export default function AssemblyScreen() {
                 className="fixed bottom-[72px] left-1/2 z-40 -translate-x-1/2"
               >
                 <div
-                  className="flex min-w-[230px] flex-col items-center gap-2 rounded-lg border border-[rgba(255,100,180,0.4)] bg-[rgba(20,0,25,0.95)] p-3 backdrop-blur-md"
-                  style={{ boxShadow: '0 0 20px rgba(255,100,180,0.25), 0 8px 24px rgba(0,0,0,0.6)' }}
+                  className="flex min-w-[230px] flex-col items-center gap-2 rounded-lg border border-[#FF88BB]/45 bg-[rgba(12,4,18,0.95)] p-3 backdrop-blur-md"
+                  style={{ boxShadow: '0 0 20px rgba(255,120,180,0.3), 0 8px 24px rgba(0,0,0,0.6)' }}
                 >
-                  <div className="flex w-full items-center justify-between border-b border-[rgba(255,100,180,0.2)] pb-1.5">
-                    <span className="font-[family-name:var(--font-josefin)] text-[0.62rem] tracking-[0.15em] text-[#FFB0D4]">
+                  <div className="flex w-full items-center justify-between border-b border-[#FF88BB]/25 pb-1.5">
+                    <span className="font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.22em] text-[#FFB0D4]">
                       {activePad === 'move' ? '✋ MOVE' : '⤢ SIZE'}
                       <span className="ml-2 text-[#FFE0F0]">{selectedPart.name}</span>
                     </span>
@@ -361,7 +379,7 @@ export default function AssemblyScreen() {
                       type="button"
                       onClick={() => setActivePad(null)}
                       aria-label="Close pad"
-                      className="text-[rgba(255,150,200,0.6)] transition hover:text-[#FFE0F0]"
+                      className="text-[#FFB0D4]/60 transition active:text-[#FFE0F0]"
                     >
                       ✕
                     </button>
@@ -402,10 +420,10 @@ export default function AssemblyScreen() {
                       {/* Large value display */}
                       <div
                         className="font-[family-name:var(--font-cormorant)] italic text-3xl font-medium leading-none tabular-nums text-[#FFE0F0]"
-                        style={{ textShadow: '0 0 14px rgba(255,100,180,0.65)' }}
+                        style={{ textShadow: '0 0 14px rgba(255,120,180,0.6)' }}
                       >
                         {(selectedScale * 100).toFixed(0)}
-                        <span className="ml-0.5 text-xl text-[#C06080]">%</span>
+                        <span className="ml-0.5 text-xl text-[#FFB0D4]">%</span>
                       </div>
 
                       {/* Slider 30% ~ 300% */}
@@ -441,7 +459,7 @@ export default function AssemblyScreen() {
                         <button
                           type="button"
                           onClick={() => selectedId && setPartScale(selectedId, 1)}
-                          className="h-7 cursor-pointer rounded border border-[rgba(255,100,170,0.5)] bg-[rgba(255,30,130,0.15)] px-2 font-[family-name:var(--font-josefin)] text-[0.6rem] tracking-[0.1em] text-[#FFB0D4] transition hover:bg-[rgba(255,30,130,0.35)] hover:text-[#FFE0F0]"
+                          className="h-7 cursor-pointer rounded-[1px] border border-[#FF88BB]/50 bg-[rgba(255,140,190,0.15)] px-2 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.14em] text-[#FFE0F0] transition active:translate-y-[1px]"
                           aria-label="Reset to 100%"
                         >
                           ↺ 100%
@@ -496,10 +514,10 @@ function FabButton({
       aria-label={label}
       aria-pressed={active}
       className={[
-        'flex h-12 items-center gap-1.5 rounded-full border px-4 font-[family-name:var(--font-josefin)] text-[0.68rem] tracking-[0.12em] backdrop-blur-md transition',
+        'flex h-12 items-center gap-1.5 rounded-full px-4 font-[family-name:var(--font-mono-hud)] text-[10px] tracking-[0.2em] uppercase backdrop-blur-md transition active:translate-y-[1px]',
         active
-          ? 'border-[#FF80C0] bg-gradient-to-br from-[#CC1166] to-[#880044] text-[#FFE0F0] shadow-[0_0_20px_rgba(255,30,140,0.55)]'
-          : 'border-[rgba(255,100,180,0.45)] bg-[rgba(20,0,25,0.85)] text-[#FFB0D4] shadow-[0_4px_12px_rgba(0,0,0,0.5),0_0_10px_rgba(255,100,180,0.15)] hover:text-[#FFE0F0]',
+          ? 'bg-gradient-to-br from-[#FFB0D4] via-[#F58AB4] to-[#E36A9A] text-[#5C1E3D] shadow-[inset_0_0_0_2px_#FFE4EF,0_0_0_2px_#C06C96,0_3px_0_rgba(120,40,80,0.4),0_0_22px_rgba(255,120,180,0.55)]'
+          : 'bg-[rgba(12,4,18,0.85)] text-[#FFB0D4] shadow-[inset_0_0_0_1px_rgba(255,136,187,0.45),0_4px_12px_rgba(0,0,0,0.5),0_0_10px_rgba(255,120,180,0.2)]',
       ].join(' ')}
     >
       <span className="text-sm">{icon}</span>
@@ -528,7 +546,7 @@ function NudgeBtn({
       onClick={onClick}
       aria-label={aria}
       className={[
-        'cursor-pointer select-none rounded border border-[rgba(255,100,170,0.4)] bg-[rgba(255,30,130,0.15)] font-[family-name:var(--font-josefin)] text-[#FFB0D4] transition hover:bg-[rgba(255,30,130,0.35)] hover:text-[#FFE0F0] active:bg-[rgba(255,30,130,0.5)]',
+        'cursor-pointer select-none rounded-[1px] border border-[#FF88BB]/45 bg-[rgba(255,140,190,0.12)] font-[family-name:var(--font-mono-hud)] text-[#FFE0F0] transition active:translate-y-[1px] active:bg-[rgba(255,140,190,0.3)]',
         big
           ? 'h-11 w-11 text-base'
           : small
