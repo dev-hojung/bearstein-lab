@@ -197,7 +197,11 @@ export default function PartShelfScreen({
 }
 
 // ── Floating Combine CTA ────────────────────────────────────────────────
-const REQUIRED_PARTS = 5;
+// Temporarily set to 4 while the 002/003 migration rollout is in progress:
+// without `cat_v2`, the cart dedupes by v1 cat (head/body/arm/leg), so it
+// physically caps at 4. Bump back to 5 once every environment has run
+// supabase/RUN_ME_NOW.sql.
+const REQUIRED_PARTS = 4;
 
 const CombineCta = memo(function CombineCta({
   count,

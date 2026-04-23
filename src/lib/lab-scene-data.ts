@@ -50,16 +50,18 @@ export const LAB_SCENE_ASSETS = {
 // cabinet on the left + empty tile slots on the right).
 export const PART_SHELF_BG = '/images/bg/part-shelf-bg.webp';
 
-// Click zones over the cabinet drawn into `part-shelf-bg.webp`. Same
-// vertical proportions as the main-scene cabinet, but shifted left since
-// the shrunken cabinet now sits in the scene's left third. Used on the
-// shelf screen to let users hop between shelves without going BACK.
+// Click zones over the cabinet drawn into `part-shelf-bg.webp`. Coordinates
+// are normalized percentages of the aspect-locked stage, so they scale
+// with the stage on any viewport (mobile portrait, landscape, desktop).
+//
+// Tuned to cover the full visible shelf cell (cabinet body + side items)
+// so the whole cell feels like one clickable tile.
 export const CABINET_SHELF_ZONES: readonly ShelfZone[] = [
-  { id: 'ears', x1: 0.13, x2: 0.33, y1: 0.25, y2: 0.36 },
-  { id: 'eyes', x1: 0.13, x2: 0.33, y1: 0.37, y2: 0.47 },
-  { id: 'ghost', x1: 0.13, x2: 0.33, y1: 0.49, y2: 0.61 },
-  { id: 'hands', x1: 0.13, x2: 0.33, y1: 0.63, y2: 0.73 },
-  { id: 'shoes', x1: 0.13, x2: 0.33, y1: 0.75, y2: 0.87 },
+  { id: 'ears', x1: 0.07, x2: 0.34, y1: 0.22, y2: 0.34 },
+  { id: 'eyes', x1: 0.07, x2: 0.34, y1: 0.35, y2: 0.47 },
+  { id: 'ghost', x1: 0.07, x2: 0.34, y1: 0.48, y2: 0.61 },
+  { id: 'hands', x1: 0.07, x2: 0.34, y1: 0.62, y2: 0.74 },
+  { id: 'shoes', x1: 0.07, x2: 0.34, y1: 0.75, y2: 0.89 },
 ] as const;
 
 export const PARTS_SHELF_ASSET = '/images/bg/parts-shelf.jpg';
