@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+
 import type { Category, Part } from './parts-data';
 
 export type Screen = 's1' | 's2' | 's3' | 's4';
@@ -15,10 +16,14 @@ type LabState = {
   cartOpen: boolean;
   toast: string | null;
   hydrated: boolean;
-  /** Per-part nudge offsets in pixels relative to default ASM_POS, keyed by part id */
+  /** Per-part nudge offsets in pixels relative to default ASM_POS, keyed by part id.
+   *  Shared by the 2D assembly screen and the 3D scene (px reinterpreted as world units). */
   partOffsets: Record<string, Offset>;
-  /** Per-part scale multipliers (1.0 = default), keyed by part id */
+  /** Per-part scale multipliers (1.0 = default), keyed by part id. Shared 2D/3D. */
   partScales: Record<string, number>;
+  /** Per-part Y-axis rotation in radians (3D scene only), keyed by part id.
+   *  Phase 0 groundwork for full 3-axis transforms in Phase 3. */
+  partRotations: Record<string, number>;
 
   show: (s: Screen) => void;
   goToCategories: () => void;
@@ -34,6 +39,7 @@ type LabState = {
 
   setPartOffset: (id: string, offset: Offset) => void;
   setPartScale: (id: string, scale: number) => void;
+  setPartRotation: (id: string, rad: number) => void;
   resetPartTransforms: () => void;
 
   setToast: (msg: string | null) => void;
@@ -51,6 +57,7 @@ export const useLabStore = create<LabState>()(
       hydrated: false,
       partOffsets: {},
       partScales: {},
+      partRotations: {},
 
       show: (s) => set({ screen: s }),
 
@@ -61,6 +68,7 @@ export const useLabStore = create<LabState>()(
       goToAssembly: () => {
         if (get().cart.length === 0) {
           set({ toast: 'Your cart is empty' });
+
           return;
         }
         set({ screen: 's4', cartOpen: false });
@@ -68,6 +76,7 @@ export const useLabStore = create<LabState>()(
 
       goBack: () => {
         const s = get().screen;
+
         if (s === 's3') set({ screen: 's2' });
         else if (s === 's4') set({ screen: 's3' });
       },
@@ -75,17 +84,22 @@ export const useLabStore = create<LabState>()(
       addOrReplace: (part) => {
         const cart = get().cart;
         const already = cart.some((c) => c.id === part.id);
+
         if (already) {
           set({ cart: cart.filter((c) => c.id !== part.id) });
+
           return { replaced: null };
         }
+
         // De-dupe by v2 category when available so ears + eyes can coexist
         // (both map to v1 `head` but occupy different v2 slots). Legacy
         // parts without catV2 fall back to v1 cat dedup.
         const key = (p: Part) => p.catV2 ?? p.cat;
         const partKey = key(part);
         const replaced = cart.find((c) => key(c) === partKey) ?? null;
+
         set({ cart: [...cart.filter((c) => key(c) !== partKey), part] });
+
         return { replaced };
       },
 
@@ -104,7 +118,10 @@ export const useLabStore = create<LabState>()(
             [id]: Math.max(0.3, Math.min(3, scale)),
           },
         })),
-      resetPartTransforms: () => set({ partOffsets: {}, partScales: {} }),
+      setPartRotation: (id, rad) =>
+        set((s) => ({ partRotations: { ...s.partRotations, [id]: rad } })),
+      resetPartTransforms: () =>
+        set({ partOffsets: {}, partScales: {}, partRotations: {} }),
 
       setToast: (msg) => set({ toast: msg }),
       _setHydrated: () => set({ hydrated: true }),
@@ -113,7 +130,8 @@ export const useLabStore = create<LabState>()(
       name: 'bearstein-lab-cart',
       // Bumped when the persisted shape changes so stale v1 data (which
       // persisted `screen`/`cat`) doesn't get merged back in.
-      version: 2,
+      // v3: added partRotations for the 3D scene.
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       // Deliberately do NOT persist `screen` or `cat`: v2 tracks the selected
       // shelf in page-local state, and persisting the screen stage causes a
@@ -123,6 +141,7 @@ export const useLabStore = create<LabState>()(
         cart: state.cart,
         partOffsets: state.partOffsets,
         partScales: state.partScales,
+        partRotations: state.partRotations,
       }),
       onRehydrateStorage: () => (state) => {
         state?._setHydrated();

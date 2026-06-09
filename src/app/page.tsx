@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+
 import { AnimatePresence } from 'framer-motion';
 
 import AssemblyScreen from '@/components/screens/AssemblyScreen';
@@ -24,6 +26,12 @@ import {
   sectionFromScreen,
 } from '@/lib/url-section';
 
+// 3D assembly is the default for s4. WebGL is client-only (browser APIs), so
+// skip SSR per Next 16 dynamic-import rules. 2D screen remains as a fallback.
+const AssemblyScene3D = dynamic(() => import('@/components/screens/AssemblyScene3D'), {
+  ssr: false,
+});
+
 const EMPTY: Record<Category, Part[]> = { head: [], body: [], arm: [], leg: [] };
 
 export default function Page() {
@@ -34,9 +42,15 @@ export default function Page() {
   const [partsLoading, setPartsLoading] = useState(true);
   const [cat, setCat] = useState<LabCategory | null>(null);
   const mainRef = useRef<HTMLElement>(null);
+  // Fallback escape hatch: ?exp=2d forces the legacy 2D assembly screen.
+  const [use2dAssembly, setUse2dAssembly] = useState(false);
   // Flag: suppresses URL writes during the initial URL → state hydration so
   // we don't race the read and clobber the incoming section.
   const hydratedFromUrlRef = useRef(false);
+
+  useEffect(() => {
+    setUse2dAssembly(new URLSearchParams(window.location.search).get('exp') === '2d');
+  }, []);
 
   useEffect(() => {
     fetch('/api/parts')
@@ -58,10 +72,12 @@ export default function Page() {
     const applyFromLocation = () => {
       const { section, cat: urlCat } = readSectionFromLocation(window.location.search);
       const targetScreen = screenFromSection(section);
+
       // Guard: shelf without a valid cat collapses back to lab.
       if (targetScreen === 's3' && !urlCat) {
         show('s2');
         setCat(null);
+
         return;
       }
       setCat(urlCat);
@@ -72,6 +88,7 @@ export default function Page() {
     hydratedFromUrlRef.current = true;
 
     window.addEventListener('popstate', applyFromLocation);
+
     return () => window.removeEventListener('popstate', applyFromLocation);
   }, [hydrated, show]);
 
@@ -83,6 +100,7 @@ export default function Page() {
     const section = sectionFromScreen(screen);
     const next = buildSectionQuery(section, cat);
     const current = window.location.search;
+
     if (next === current) return;
     window.history.pushState(null, '', next + window.location.hash);
   }, [screen, cat, hydrated]);
@@ -99,6 +117,7 @@ export default function Page() {
     (next: LabCategory) => {
       setCat(next);
       const target = mainRef.current;
+
       if (target) {
         runPixelGlitch(target, { duration: 520 });
       }
@@ -113,6 +132,7 @@ export default function Page() {
     if (!target) {
       setCat(null);
       show('s2');
+
       return;
     }
 
@@ -126,6 +146,7 @@ export default function Page() {
 
   const handleGoToAssembly = useCallback(() => {
     const target = mainRef.current;
+
     if (target) {
       runPixelGlitch(target, { duration: 520 });
     }
@@ -136,6 +157,7 @@ export default function Page() {
     (next: LabCategory) => {
       if (next === cat) return;
       const target = mainRef.current;
+
       // Short glitch flash for the feedback bite without stalling the switch.
       if (target) {
         runPixelGlitch(target, { duration: 300 });
@@ -164,7 +186,7 @@ export default function Page() {
               onSwitchCategory={handleSwitchCategory}
             />
           )}
-          {screen === 's4' && <AssemblyScreen />}
+          {screen === 's4' && (use2dAssembly ? <AssemblyScreen /> : <AssemblyScene3D />)}
         </AnimatePresence>
       )}
 
