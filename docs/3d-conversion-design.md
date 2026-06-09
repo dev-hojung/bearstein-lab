@@ -1,168 +1,198 @@
-# Bearstein Lab — 3D 전환 점진적 진화 설계
+# Bearstein Lab — 전체 3D 전환 설계 (Full-3D Conversion Design)
 
-> 목표: 2D 종이인형 조립 앱을 **진짜 3D 곰 빌더**로 발전시킨다.
-> 전략: ① 의사 3D(2.5D) → ② 하이브리드 → ③ 진짜 3D 모델 을 **누적(additive)** 으로 쌓는다.
-> 핵심 원칙: 세 단계가 **동일한 소켓 좌표계 + 파츠 렌더러 추상화**를 공유한다.
-> 다음 단계는 재작성이 아니라 "렌더러 한 조각 + 데이터 한 필드" 교체로 끝난다.
+> 목표: 2D 픽셀아트 종이인형 앱을 **진짜 3D 경험**으로 전환한다.
+> 전략: 누적(additive) 진화 — 이미 출시한 2.5D 위에 화면별로 3D를 쌓고,
+> 한 단계 실패가 다음을 막지 않도록 **2D 폴백을 상시 유지**한다.
+> 핵심 원칙: 모든 단계가 **공통 소켓/렌더러 추상화**를 공유한다. 다음 단계는
+> 재작성이 아니라 "렌더러 한 조각 + 에셋 한 벌" 교체로 끝난다.
 
-상태(2026-06): Next 16 / React 19 / zustand / framer-motion. 3D 라이브러리 없음.
-파츠는 평면 SVG 64장(4부위 × 4변형 × 4색상). 조립은 `AssemblyScreen`에서 2D 레이어링.
-저장은 `html-to-image`(DOM→PNG). 피처 플래그 패턴(`?exp=v2`) 기존 존재.
+문서 상태: 2026-06 / 브랜치 `feat/3d-assembly-default` 기준.
 
 ---
 
-## 0. 공통 기반 (Phase 0 — 세 단계가 전부 의존)
+## A. 현재 구현 상태 (As-Built) — 무엇이 이미 됐나
 
-이 레이어를 처음에 제대로 깔아두는 것이 점진적 진화의 전제다.
+조립 화면(s4)은 **이미 3D가 기본**이다. 나머지 화면(s1/s2/s3)은 아직 2D 픽셀아트다.
 
-### 0.1 라이브러리
-- `@react-three/fiber` (R3F v9, React 19 호환), `@react-three/drei`, `three`.
-- `'use client'` + `dynamic(() => import(...), { ssr: false })` 로 로드 (WebGL은 SSR 불가).
-- **선행: `node_modules/next/dist/docs/` 의 dynamic import / client component 가이드 확인** (AGENTS.md 규칙).
+| 영역 | 파일 | 상태 |
+|---|---|---|
+| 소켓 좌표계 | `src/lib/scene-3d.ts` | ✅ `socketForPart(part)` — 2D와 **동일 소스**(`assemblyPosFor`/`assemblyZFor`)로 앵커 해석. v2 5슬롯(ears/eyes/ghost/hands/shoes) 분리 배치 |
+| WebGL PNG 저장 | `src/lib/capture-3d.ts` | ✅ `preserveDrawingBuffer` + `toDataURL`, 3x 투명 PNG (`html-to-image` 대체) |
+| 상태 모델 | `src/lib/store.ts` | ✅ `partRotations` 추가, persist v2→v3. position/scale은 2D와 공유 |
+| 3D 조립 씬 | `src/components/screens/AssemblyScene3D.tsx` | ✅ R3F 2.5D — SVG 텍스처 평면, 포인터 틸트, 시차 깊이, ContactShadows, 부위별 이동/크기/Y회전 |
+| 진입/폴백 | `src/app/page.tsx` | ✅ **s4 기본=3D**, `?exp=2d`면 2D `AssemblyScreen` 폴백. dynamic import `ssr:false` |
+| 렌더러 추상화 | `AssemblyScene3D` 내 `PartNode` | ✅ `sprite \| billboard3d \| mesh` 분기 — 현재 **sprite만 구현**, 나머지는 폴백 |
 
-### 0.2 소켓 좌표계 — `ASM_POS`(2D top/z)를 3D로 대체/병행
-`src/lib/scene-3d.ts`
+검증: `next build`(tsc) 통과, Playwright e2e로 3D 기본 진입·5슬롯 배치·회전/크기·744KB PNG·2D 폴백·콘솔 에러 0 확인.
+
+> ⚠️ 직전 설계 문서 대비 갱신점: (1) 진입이 `?exp=3d` 플래그 → **3D 기본 + `?exp=2d` 폴백**으로 변경.
+> (2) 정적 `SOCKETS[cat]` → **`socketForPart()`**(v2 슬롯 인지)로 변경.
+
+**여기까지가 "2.5D"** — 평면 SVG를 3D 공간에 띄운 것. 아래부터가 "전체 3D"의 설계다.
+
+---
+
+## B. "전체 3D"의 정의 — 화면별 스코프
+
+앱은 4개 화면. 각 화면을 3D로 만든다는 것의 의미와 비용이 다르다.
+
+| 화면 | 현재 | 전체 3D 목표 | 에셋 비용 |
+|---|---|---|---|
+| s1 인트로 | `intro.webp` + CRT/글리치 | 3D 로고/연구실 입구 리빌, 카메라 도입 | 소~중 |
+| s2 랩 씬 | 합성 이미지 + 5 히트존(`SHELF_ZONES`) | **둘러보는 3D 연구실**, 선반=3D 오브젝트 | **대** (룸 모델링) |
+| s3 부품 셸프 | 캐비닛 이미지 + 5×3 타일 그리드 | **3D 캐비닛**, 부품=회전하는 3D 미니어처 | 대 (부품 메시) |
+| s4 조립 | ✅ 2.5D (구현됨) | **진짜 3D 곰** 360° + 소켓 결합 + 기즈모 | **대** (곰 파츠 메시) |
+
+핵심 통찰: **진짜 병목은 코드가 아니라 3D 에셋 제작**이다. 곰 파츠 메시와 연구실 룸이
+전체 일정의 70~80%. 코드(R3F)는 표준이라 상대적으로 예측 가능.
+
+**스코프 권고 (2트랙 분리):**
+- **트랙 1 — 곰(파츠) 진짜 3D**: s4(+s3 미리보기)의 곰을 GLTF 메시로. 제품 가치 핵심.
+- **트랙 2 — 환경(룸/캐비닛) 3D**: s1/s2/s3의 무대를 3D 공간으로. 분위기·몰입.
+두 트랙은 독립 진행 가능. **트랙 1 먼저**를 권장(로드맵 F).
+
+---
+
+## C. 공통 아키텍처 (모든 3D 화면이 공유)
+
+### C.1 단일 3D 월드 vs 화면별 씬
+- **선택: 화면별 R3F `<Canvas>`(현 방식 유지) + 공유 라이브러리.**
+  단일 영속 월드(전환 시 카메라만 이동)는 몰입↑이나 화면 간 강결합·메모리·복잡도↑.
+  현 전환은 `AnimatePresence`+`url-section` 기반이라 화면별 Canvas가 기존 구조와 정합.
+  공통 요소(곰 rig·조명·카메라·postprocessing)는 `src/lib/r3f/`로 추출해 재사용.
+
+### C.2 곰 Rig & 소켓 (트랙 1의 심장) — 현 `socketForPart` 확장
+지금 소켓은 2D 평면 좌표(top/width/depth) 환산. 진짜 3D에선 **부착 변환 + 명명 규약**으로 승격:
 ```ts
-export type Socket = {
-  position: [number, number, number]; // 3D 앵커 (부위별 부착 지점)
-  rotation: [number, number, number];
-  scale: number;
-};
-// head/body/arm/leg 4개 소켓. 기존 ASM_Z 적층 순서를 z축 깊이로 환산.
-export const SOCKETS: Record<Category, Socket> = { /* ... */ };
-```
-이 소켓은 **세 단계 내내 불변**. 파츠가 sprite든 mesh든 항상 이 소켓에 붙는다.
-
-### 0.3 파츠 렌더러 추상화 — 진화의 심장
-```ts
-type PartVisual =
-  | { kind: 'sprite'; texture: string }              // Phase 1: SVG 텍스처 평면
-  | { kind: 'billboard3d'; texture: string; depth: number } // Phase 2: 깊이/그림자
-  | { kind: 'mesh'; glbUrl: string };                // Phase 3: 진짜 메시
-```
-`<PartNode socket part transform />` 가 `part.render?.kind`(없으면 현 phase 기본값)에 따라
-렌더러를 분기. **파츠를 3D로 승격 = glb 추가 + kind를 'mesh'로 바꾸는 것뿐.** 씬 코드는 그대로.
-→ 카탈로그를 파츠 단위로 점진 마이그레이션 가능(일부는 mesh, 일부는 sprite 공존).
-
-### 0.4 상태 모델 확장 (하위호환)
-`store.ts` 에 3축 트랜스폼 추가, 기존 2D 필드는 유지하고 마이그레이션:
-```ts
-partTransforms: Record<string, {
+// scene-3d.ts (확장)
+export type Socket3D = {
   position: [number, number, number];
   rotation: [number, number, number];
   scale: number;
-}>;
+  anchor?: 'pivot' | 'top' | 'center'; // 메시 원점 규약과 1:1
+};
+export const BEAR_SOCKETS: Record<V2Slot, Socket3D>; // ears/eyes/ghost/hands/shoes
 ```
-`onRehydrateStorage`에서 구버전 `partOffsets{x,y}`/`partScales` → `partTransforms`로 1회 변환.
+이 소켓 맵은 **2.5D·하이브리드·진짜 3D 내내 불변**. 메시든 스프라이트든 여기 붙는다.
 
-### 0.5 PNG 저장 — `html-to-image` 불가, 공통 유틸로 교체
-WebGL 캔버스는 DOM 캡처가 안 됨.
-- `gl` 옵션에 `preserveDrawingBuffer: true`
-- 저장 시 고해상도 오프스크린 렌더 → `renderer.domElement.toDataURL('image/png')` (현 pixelRatio 3 대응).
-- 투명 배경 유지를 위해 배경 plane을 캡처 직전 토글.
-`src/lib/capture-3d.ts` 로 분리 — 세 단계 공통.
+### C.3 파츠 렌더러 추상화 (이미 존재, 확장만)
+`PartNode`의 `sprite | billboard3d | mesh` 분기:
+- `sprite`(P1, 구현됨): SVG 텍스처 평면
+- `billboard3d`(P2): 깊이·음영 + SVG `ExtrudeGeometry` 얇은 입체(브리지)
+- `mesh`(P3): `useGLTF`로 진짜 메시 부착
+**파츠 단위 점진 승격**: `part.model`(glb url) 있으면 mesh, 없으면 빌보드 폴백 →
+일부만 메시인 혼합 카탈로그로 출시 가능.
 
-### 0.6 진입 & 폴백
-- 기존 `?exp=v2` 와 동일하게 **`?exp=3d`** 플래그 뒤에서 `AssemblyScene3D` 활성화.
-- 2D `AssemblyScreen`은 그대로 유지 → 항상 폴백/대조군 존재. WebGL 미지원·저사양 기기 자동 폴백.
-
----
-
-## Phase 1 — 의사 3D (2.5D) 🟢 에셋 추가 0장
-
-**목표:** 기존 SVG 64장을 그대로 쓰면서 "입체로 보이게". 가장 빠른 출시 가능 산출물.
-
-- 각 SVG를 텍스처 평면(`<mesh>` + plane geometry, alpha test)으로 로드해 소켓에 배치.
-  (SVG→texture: `TextureLoader` 또는 svg를 캔버스 래스터화. 색상변형은 기존 파일 재사용.)
-- 깊이감 장치:
-  - 부위별 z 오프셋(머리 앞 / 다리 뒤) — 기존 `ASM_Z` 그대로 환산.
-  - 무대 전체를 마우스/자이로에 따라 ±10° tilt + parallax.
-  - `<ContactShadows>` 로 바닥 그림자 → 떠 있지 않고 "놓인" 느낌.
-  - CRT/파스텔 무드 유지: 약한 bloom/비네팅 postprocessing(선택).
-- 조작 UX: 현 드래그=이동 그대로 유지(스크린 평면 이동을 소켓 오프셋으로 매핑). 회전은 아직 무대 한정.
-- 저장: 0.5 공통 유틸.
-
-**산출물:** 돌아가는 3D 무대 위 종이인형. 기존 기능(선택/이동/스케일/저장) 전부 동등.
-**공수:** 소 (수일). 리스크 낮음 — 신규 에셋 없음.
-
----
-
-## Phase 2 — 하이브리드 🟡 무대는 진짜 3D, 파츠는 빌보드
-
-**목표:** 조명·그림자·회전이 진짜인 디오라마. 파츠는 아직 2D지만 입체 공간에 산다.
-
-- 조명 리그: 3점 조명 + 환경광(`<Environment>`), 소프트 섀도(`<AccumulativeShadows>`).
-- 파츠 렌더러를 `billboard3d`로 승격: 카메라를 향하되 약간의 두께/노멀 음영(emissive tint).
-- **브리지 기법:** SVG path를 `ExtrudeGeometry`로 살짝 압출 → 평면이 아닌 얇은 입체. 진짜 메시(P3) 전 단계 질감.
-- 카메라: `OrbitControls` 가동 범위 확대(상하/좌우 제한 궤도). 무대 회전 → 카메라 궤도로 이관.
-- 색상변형: 이 시점부터 텍스처 tint를 머티리얼로 처리 시도 → 64파일 의존 축소 준비.
-
-**Phase 1에서 바뀌는 것:** 렌더러 분기 한 줄(`sprite`→`billboard3d`) + 조명/그림자 노드 추가. 데이터·소켓·저장 그대로.
-**공수:** 중.
-
----
-
-## Phase 3 — 진짜 3D 모델 🔴 파츠 = GLTF 메시
-
-**목표:** 360° 곰을 돌려보고 파츠를 소켓에 끼우는 진짜 3D 빌더. **에셋 제작이 전체 일정의 80%.**
-
-### 3.1 데이터 (하위호환 추가)
-`parts-data.ts` 의 `Part`에 옵션 필드 추가 — 있으면 mesh, 없으면 빌보드 폴백:
+### C.4 데이터 모델 (하위호환 추가)
 ```ts
-type Part = { /* 기존 */ model?: string; /* /models/h0.glb */ };
+// parts-data.ts — Part에 옵션 필드
+type Part = { /* 기존 */ model?: string; colorway?: string; socket?: V2Slot };
 ```
-→ **파츠별 점진 교체**: 머리만 먼저 메시화하고 나머지는 빌보드로 두는 혼합 출시 가능.
+- `model` 없으면 현행 SVG 빌보드. 점진 마이그레이션 스위치.
+- **색상 4종(mint/rose/sky/기본)은 별도 파일 금지** → 단일 메시 + 머티리얼/버텍스컬러
+  스왑. 현 64개 SVG 변형(16×4색)을 메시에선 **16 메시 + 색 파라미터**로 축소.
 
-### 3.2 에셋 파이프라인 (핵심 의사결정 — 아래 "결정 필요" 참조)
-- 모델 수: 최소 16개(4부위×4변형). **색상 4종은 별도 파일 금지** → 단일 메시 + 머티리얼/버텍스컬러 스왑(64→16).
-- 포맷: GLB, Draco 압축. 모바일 폴리 예산 합산 관리.
-- **소켓 정렬 규약:** 모든 메시는 원점 = 부착 지점, +Y 업, 동일 스케일 기준. (모델러/생성기에 전달할 스펙 문서화.)
+### C.5 공통 R3F 라이브러리 `src/lib/r3f/`
+- `Lighting.tsx` — 파스텔/CRT 무드 3점+환경광 프리셋
+- `CameraRig.tsx` — 화면별 OrbitControls 제한값 프리셋
+- `Effects.tsx` — bloom/비네팅/스캔라인 postprocessing(현 CSS 오버레이의 3D판)
+- `useCaptureBridge` — `capture-3d` 래퍼
+- `MeshPart.tsx` / `SpritePart.tsx` — 렌더러 구현 분리
 
-### 3.3 코드
-- `useGLTF`(drei)로 로드 + Suspense, Draco loader 설정.
-- `PartNode` 의 `mesh` 분기: 메시를 소켓 트랜스폼에 부착.
-- 트랜스폼 기즈모: 3축 이동/회전/스케일(`TransformControls` 또는 커스텀). 모바일은 현 FAB 패드를 3축으로 확장.
-- 카메라 풀 오빗.
-
-**Phase 2에서 바뀌는 것:** 렌더러에 `mesh` 분기 추가 + `model` 필드 채우기 + 기즈모 확장. 소켓/저장/플래그 그대로.
-**공수:** 대 (코드는 표준, **모델링 리소스가 병목**).
-
----
-
-## 진화 매트릭스 — 단계별로 "무엇만" 바뀌나
-
-| 레이어 | P1 (2.5D) | P2 (하이브리드) | P3 (진짜 3D) |
-|---|---|---|---|
-| 소켓 좌표계 (0.2) | ✅ 확정 | 그대로 | 그대로 |
-| 상태 모델 (0.4) | ✅ 확정 | 그대로 | 그대로 |
-| 저장 유틸 (0.5) | ✅ 확정 | 그대로 | 그대로 |
-| 진입 플래그 (0.6) | ✅ 확정 | 그대로 | 그대로 |
-| 파츠 렌더러 | sprite | +billboard3d | +mesh |
-| 조명/그림자 | ContactShadows | 3점+환경+소프트 | 그대로 |
-| 카메라 | 무대 tilt | OrbitControls | 풀 오빗 |
-| 에셋 | SVG 재사용 | SVG 압출 | **GLB 신규** |
-
-→ 0번 기반(소켓/상태/저장/플래그)을 한 번만 깔면, 이후는 **렌더러 + 에셋만** 진화.
+### C.6 저장/캡처
+`capture-3d`(구현됨) 공통 사용. 진짜 3D에선 "현재 앵글 PNG"가 자연스럽고, 선택적으로
+**턴테이블 GIF/짧은 회전 영상** 내보내기 확장 가능(P3 옵션).
 
 ---
 
-## 결정 필요 (Phase 3 진입 전, 미리 합의해두면 좋음)
+## D. 에셋 파이프라인 (실제 작업의 70~80%) — 트랙 1
 
-1. **3D 모델 조달 방식**
-   - (a) 전문 모델러 외주/내부 — 품질 최상, 비용·일정 큼
-   - (b) AI 3D 생성(Meshy / Tripo / Rodin 등)으로 베이스 → 정리 — 빠름·저렴, 품질/리깅 손봐야 함
-   - (c) 절차적/프리미티브 조합으로 곰 형태 코드 생성 — 에셋 0이지만 표현 한계
-2. **색상변형 전략:** 머티리얼 스왑(권장) vs 텍스처 배리언트 — 64→16 파일 축소 여부.
-3. **PoC 범위:** P1 전체 vs "머리 1개만 진짜 메시"로 P3 리스크 먼저 검증.
+### D.1 곰 파츠 모델 사양 (모델러/AI 생성기 전달용 스펙)
+- **수량**: v2 슬롯 5종 × 변형(현 데이터 부위별 4변형). 우선 **슬롯당 1개(총 5개) PoC**, 이후 확장.
+- **포맷**: glb, Draco 압축. 모바일 합산 폴리 예산(G) 내.
+- **원점/스케일 규약**: 모델 원점 = 소켓 부착점, +Y 업, 1 unit = `PX_TO_UNIT` 정합.
+  ears/eyes는 머리 위 같은 기준 프레임 공유(현 `ASM_POS_V2` top −8/18 관계의 3D판).
+- **색상**: 베이스 머티리얼 1개 + tint 슬롯. 텍스처 1 set 또는 무텍스처 vertex color.
+- **명명**: `bear_<slot>_<variant>.glb`, 소켓 노드명 규약 문서화.
+
+### D.2 조달 방식 (결정 필요 — D.4)
+- (a) 전문 모델러: 품질 최상, 비용·일정 큼
+- (b) **AI 3D 생성(Meshy / Tripo / Rodin)**: 기존 SVG/이미지 레퍼런스로 베이스 메시 생성 →
+  리토폴로지/정리. 빠르고 저렴, 품질·소켓 정렬은 손봐야 함. **PoC 권장**
+- (c) 절차적(프리미티브 조합 곰): 에셋 0이나 표현 한계
+
+### D.3 파이프라인 단계
+1. 슬롯당 1개 베이스 메시 확보(방식 b로 빠르게) → 2. 원점/스케일/소켓 정렬 정리(Blender) →
+3. Draco glb 익스포트 → `public/models/` → 4. `part.model` 채우고 mesh 분기 활성 →
+5. 모바일 실측 → 폴리/텍스처 예산 튜닝 → 변형 확장.
+
+### D.4 결정 필요 (트랙 1 진입 전)
+1. **모델 조달 방식**: (a)/(b)/(c)? → 권장 (b)로 5개 PoC 후 판단
+2. **색상 전략**: 머티리얼 스왑(권장) vs 텍스처 변형
+3. **PoC 범위**: 5슬롯 전체 vs "1슬롯(ears/eyes)만" 먼저
 
 ---
 
-## 권장 진행 순서
+## E. 화면별 3D 설계
 
-1. **Phase 0 기반 + Phase 1 PoC**를 `?exp=3d` 뒤에 구현 → 돌아가는 2.5D 무대 확보(빠른 가치).
-2. 무드/성능/UX 검증 후 **Phase 2**로 조명·그림자·압출 입체화.
-3. 병행하여 **모델 1개(머리)**만 P3 파이프라인으로 만들어 메시 경로·소켓 정렬·번들/모바일 성능을 실측 → 전체 모델링 발주 결정.
-4. 모델 확보분부터 파츠 단위로 `mesh` 승격(혼합 출시).
+### E.1 s4 조립 (트랙 1 — 곰)
+현 2.5D → **하이브리드(P2) → 진짜 3D(P3)**:
+- **P2 하이브리드**: `Lighting`/소프트섀도/`Effects` 도입, 빌보드 깊이·음영, SVG 압출.
+  카메라 무대 틸트 → `OrbitControls` 제한 궤도로 이관. (렌더러 분기 1줄 + 노드 추가)
+- **P3 진짜 3D**: `part.model` 채우고 mesh 분기 활성. 3축 트랜스폼 기즈모(현 패널 확장),
+  풀 오빗, 결합 스냅(소켓에 끼우는 느낌), 색상 = 머티리얼 파라미터.
 
-리스크 요약: 모바일 WebGL 성능/배터리, R3F 번들 증가, SVG→텍스처 선명도(P1), 메시 소켓 정렬 일관성(P3), 저장 해상도/투명도.
-모두 단계별로 격리되어 한 단계 실패가 다음 단계를 막지 않음(2D 폴백 상시 유지).
+### E.2 s3 부품 셸프 (트랙 1 미리보기 + 트랙 2 캐비닛)
+- 현재: 캐비닛 이미지 + 5×3 SVG 타일.
+- 트랙 1: 타일을 **회전하는 3D 미니어처**(소형 캔버스 or 인스턴스)로. hover 회전.
+- 트랙 2: 캐비닛 자체를 3D 오브젝트로(룸과 통합).
+- `CABINET_SHELF_ZONES`·카테고리 전환·`addOrReplace` 카트 로직은 그대로 재사용.
+
+### E.3 s2 랩 씬 (트랙 2 — 환경, 최대 에셋)
+- 현재: `lab-bright`/`lab-dark` 합성 + 5 `SHELF_ZONES` + "lights out" 연출.
+- 목표: **둘러보는 3D 연구실**, 선반 5개가 3D 오브젝트, 카메라 패럴랙스/제한 오빗.
+  "lights out"은 3D 조명 시퀀스로 재현.
+- 비용 큼(룸 모델링). **트랙 1 완료 후** 착수. 폴백: 현 2D 이미지 유지.
+
+### E.4 s1 인트로 (가벼운 3D 입구)
+- 3D 로고/연구실 문 열림 → 카메라 진입 → s2. 또는 현 글리치 인트로 유지 후 3D 디졸브.
+  비용 소~중, 마지막에 해도 됨.
+
+---
+
+## F. 로드맵 & 마일스톤
+
+| 단계 | 내용 | 트랙 | 산출물 | 의존 |
+|---|---|---|---|---|
+| ✅ M0 | 2.5D 기반 + s4 3D 기본 | 1 | (완료) | — |
+| M1 | 공통 `r3f/` 라이브러리 추출(조명·카메라·effects·캡처) | 1 | 재사용 레이어 | M0 |
+| M2 | s4 하이브리드(P2): 조명/그림자/압출/오빗 | 1 | 입체 무대 | M1 |
+| M3 | **곰 메시 PoC** — 1슬롯 glb → mesh 분기 검증(소켓 정렬·모바일 성능) | 1 | go/no-go 근거 | M1, D.4 |
+| M4 | 곰 5슬롯 메시 + 색상 머티리얼 + 기즈모 + 결합 스냅 | 1 | **진짜 3D 곰** | M3 |
+| M5 | s3 부품 3D 미니어처 미리보기 | 1 | 셸프 입체화 | M4 |
+| M6 | s2 3D 연구실 룸 | 2 | 몰입 환경 | M4(독립 가능) |
+| M7 | s1 3D 인트로 + 화면 간 카메라 연결 다듬기 | 2 | 마감 | M6 |
+
+권장: **M1→M2→M3 먼저**. M3 PoC 결과로 전체 모델링/룸 발주 규모 확정 후 M4~ 진행.
+
+---
+
+## G. 리스크 & 가드레일
+
+- **모바일 WebGL 성능/배터리**: 폴리·드로우콜·텍스처 예산을 M3에서 실측. 합산 목표
+  예산을 정하고 LOD/인스턴싱 검토. 저사양은 자동 2D 폴백.
+- **번들 크기**: three+R3F+drei(+postprocessing) 증가. dynamic import로 3D 청크 분리(적용됨).
+- **에셋 일관성**: 소켓 원점/스케일 규약 위반이 최대 함정 → 규약 문서 + glb 검증 스크립트.
+- **접근성/폴백**: WebGL 미지원·`prefers-reduced-motion`·저사양 → 2D 경로 상시 유지
+  (현 `?exp=2d`를 정식 폴백 정책으로 승격).
+- **무드 보존**: 파스텔/CRT 감성을 3D 조명·postprocessing으로 재현(흰 PBR 룩 회피).
+- **단계 격리**: 각 마일스톤 독립 출시 가능, 실패가 다음을 막지 않음.
+
+---
+
+## H. 지금 결정해 주실 것 (다음 작업 착수용)
+
+1. **트랙 우선순위**: 트랙 1(곰 진짜 3D) 먼저 vs 트랙 2(환경) 병행? → 권장 **트랙 1 먼저**
+2. **에셋 조달**(D.4-1): AI 생성(b) PoC vs 모델러(a)?
+3. **PoC 범위**(D.4-3): 1슬롯 vs 5슬롯?
+4. 다음 코드 작업: **M1(공통 r3f 추출)** vs **M2(하이브리드)** 중 무엇부터?
