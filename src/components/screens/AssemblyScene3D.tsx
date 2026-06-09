@@ -1,114 +1,23 @@
 'use client';
 
-// ── Phase 1: 2.5D assembly scene (behind ?exp=3d) ──
-// Reuses the existing flat SVG parts as textured planes on a 3D stage with
-// pointer-driven tilt, parallax depth (from ASM_Z) and a ground shadow.
-// Built on the Phase 0 foundation (SOCKETS / capture-3d) and the additive
-// PartNode renderer switch (sprite → billboard3d → mesh) so later phases
-// only swap a render branch, never rewrite the scene.
+// ── s4 assembly — 3D (default). Phase 1 "2.5D": flat SVG parts as textured
+// planes on a 3D stage with pointer tilt, parallax depth and a ground shadow.
+// Scene building blocks live in @/lib/r3f so other 3D screens reuse them.
+// The PartNode renderer switch (sprite → billboard3d → mesh) means later
+// phases swap a render branch, never rewrite this screen.
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Outlines, useTexture } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { ContactShadows } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import * as THREE from 'three';
 
 import BackButton from '@/components/ui/BackButton';
 
-import { captureScenePng, downloadDataUrl, type CaptureContext } from '@/lib/capture-3d';
+import { downloadDataUrl } from '@/lib/capture-3d';
+import { CaptureBridge, PartNode, SceneLighting, TiltGroup } from '@/lib/r3f';
 import { BACKGROUNDS, CAT_LABEL, type Part } from '@/lib/parts-data';
-import { offsetToWorld, socketForPart } from '@/lib/scene-3d';
 import { useLabStore } from '@/lib/store';
-
-// ── Capture bridge: exposes the live renderer to the outer Save button ──
-function CaptureBridge({ apiRef }: { apiRef: React.RefObject<(() => string) | null> }) {
-  const { gl, scene, camera } = useThree();
-
-  useEffect(() => {
-    const ctx: CaptureContext = { gl, scene, camera };
-
-    apiRef.current = () => captureScenePng(ctx, 3);
-
-    return () => {
-      apiRef.current = null;
-    };
-  }, [gl, scene, camera, apiRef]);
-
-  return null;
-}
-
-// ── Pointer-driven diorama tilt (Phase 1 stand-in for full OrbitControls) ──
-function TiltGroup({ children }: { children: React.ReactNode }) {
-  const ref = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    const g = ref.current;
-
-    if (!g) return;
-    const targetY = state.pointer.x * 0.35;
-    const targetX = -state.pointer.y * 0.18;
-
-    g.rotation.y += (targetY - g.rotation.y) * 0.06;
-    g.rotation.x += (targetX - g.rotation.x) * 0.06;
-  });
-
-  return <group ref={ref}>{children}</group>;
-}
-
-// ── Part renderer (additive switch) ──
-// Phase 1 implements 'sprite'. 'billboard3d' (Phase 2) and 'mesh' (Phase 3)
-// fall back to sprite until those phases land.
-function PartNode({
-  part,
-  selected,
-  onSelect,
-}: {
-  part: Part;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const offset = useLabStore((s) => s.partOffsets[part.id]) ?? { x: 0, y: 0 };
-  const scale = useLabStore((s) => s.partScales[part.id]) ?? 1;
-  const rotY = useLabStore((s) => s.partRotations[part.id]) ?? 0;
-
-  const texture = useTexture(part.url, (t) => {
-    const tex = Array.isArray(t) ? t[0] : t;
-
-    tex.colorSpace = THREE.SRGBColorSpace;
-  });
-
-  const socket = socketForPart(part);
-  const img = texture.image as { width: number; height: number } | undefined;
-  const aspect = img && img.height ? img.width / img.height : 1;
-  const w = socket.widthUnit;
-  const h = w / aspect;
-
-  const [ox, oy] = offsetToWorld(offset);
-  // Top-anchor like the 2D `top` value, then apply the user's offset.
-  const y = socket.topUnit - h / 2 + oy;
-
-  return (
-    <group position={[ox, y, socket.depth]} rotation={[0, rotY, 0]} scale={scale}>
-      <mesh
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          onSelect();
-        }}
-      >
-        <planeGeometry args={[w, h]} />
-        <meshBasicMaterial
-          map={texture}
-          transparent
-          alphaTest={0.5}
-          side={THREE.DoubleSide}
-          toneMapped={false}
-        />
-        {selected && <Outlines thickness={4} color="#FF80C0" screenspace />}
-      </mesh>
-    </group>
-  );
-}
 
 function Stage({
   cart,
@@ -121,8 +30,7 @@ function Stage({
 }) {
   return (
     <>
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[2, 4, 5]} intensity={0.6} />
+      <SceneLighting />
 
       <TiltGroup>
         <Suspense fallback={null}>
