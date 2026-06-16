@@ -44,12 +44,16 @@ export default function Page() {
   const mainRef = useRef<HTMLElement>(null);
   // Fallback escape hatch: ?exp=2d forces the legacy 2D assembly screen.
   const [use2dAssembly, setUse2dAssembly] = useState(false);
+  // ?model=bear → whole-bear GLTF preview in the 3D assembly (M3 PoC).
+  const [modelPreview, setModelPreview] = useState(false);
   // Flag: suppresses URL writes during the initial URL → state hydration so
   // we don't race the read and clobber the incoming section.
   const hydratedFromUrlRef = useRef(false);
 
   useEffect(() => {
-    setUse2dAssembly(new URLSearchParams(window.location.search).get('exp') === '2d');
+    const params = new URLSearchParams(window.location.search);
+    setUse2dAssembly(params.get('exp') === '2d');
+    setModelPreview(params.get('model') === 'bear');
   }, []);
 
   useEffect(() => {
@@ -186,7 +190,8 @@ export default function Page() {
               onSwitchCategory={handleSwitchCategory}
             />
           )}
-          {screen === 's4' && (use2dAssembly ? <AssemblyScreen /> : <AssemblyScene3D />)}
+          {screen === 's4' &&
+            (use2dAssembly ? <AssemblyScreen /> : <AssemblyScene3D modelPreview={modelPreview} />)}
         </AnimatePresence>
       )}
 

@@ -3,3 +3,4 @@ export { SceneLighting } from './Lighting';
 export { TiltGroup } from './TiltGroup';
 export { CaptureBridge } from './CaptureBridge';
 export { PartNode } from './PartNode';
+export { GltfModel, preloadGltf } from './GltfModel';

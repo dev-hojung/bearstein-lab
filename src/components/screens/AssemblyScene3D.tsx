@@ -9,15 +9,19 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 
 import { Canvas } from '@react-three/fiber';
-import { ContactShadows } from '@react-three/drei';
+import { ContactShadows, OrbitControls } from '@react-three/drei';
 import { motion } from 'framer-motion';
 
 import BackButton from '@/components/ui/BackButton';
 
 import { downloadDataUrl } from '@/lib/capture-3d';
-import { CaptureBridge, PartNode, SceneLighting, TiltGroup } from '@/lib/r3f';
+import { CaptureBridge, GltfModel, PartNode, SceneLighting, TiltGroup } from '@/lib/r3f';
 import { BACKGROUNDS, CAT_LABEL, type Part } from '@/lib/parts-data';
 import { useLabStore } from '@/lib/store';
+
+// Whole-bear 3D preview (M3 PoC). Opt-in via ?model=bear so the sprite
+// assembly stays the default until swappable part meshes exist.
+const BEAR_MODEL_URL = '/models/bear-steampunk.glb';
 
 function Stage({
   cart,
@@ -57,7 +61,7 @@ function Stage({
   );
 }
 
-export default function AssemblyScene3D() {
+export default function AssemblyScene3D({ modelPreview = false }: { modelPreview?: boolean }) {
   const cart = useLabStore((s) => s.cart);
   const partOffsets = useLabStore((s) => s.partOffsets);
   const partScales = useLabStore((s) => s.partScales);
@@ -134,7 +138,10 @@ export default function AssemblyScene3D() {
             textShadow: '0 0 12px rgba(255,100,180,0.6)',
           }}
         >
-          Assembly 3D <span className="text-[0.6em] not-italic text-[#A0FFB8]">· 2.5D</span>
+          Assembly 3D{' '}
+          <span className="text-[0.6em] not-italic text-[#A0FFB8]">
+            · {modelPreview ? 'model' : '2.5D'}
+          </span>
         </h1>
         <div className="ml-auto flex gap-2">
           <button
@@ -166,18 +173,41 @@ export default function AssemblyScene3D() {
           onPointerMissed={() => setSelectedId(null)}
         >
           <CaptureBridge apiRef={captureRef} />
-          <Stage cart={cart} selectedId={selectedId} onSelect={setSelectedId} />
+          {modelPreview ? (
+            <>
+              <SceneLighting />
+              <directionalLight position={[-3, 2, -4]} intensity={0.5} />
+              <GltfModel url={BEAR_MODEL_URL} />
+              <ContactShadows
+                position={[0, -1.15, 0]}
+                opacity={0.4}
+                scale={6}
+                blur={2.4}
+                far={4}
+                color="#5a0030"
+              />
+              <OrbitControls makeDefault enablePan={false} minDistance={1.5} maxDistance={14} />
+            </>
+          ) : (
+            <Stage cart={cart} selectedId={selectedId} onSelect={setSelectedId} />
+          )}
         </Canvas>
       </div>
 
-      {cart.length === 0 && (
+      {!modelPreview && cart.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center font-[family-name:var(--font-josefin)] text-xs font-extralight tracking-[0.12em] text-[rgba(255,150,200,0.6)]">
           No parts selected — add parts to your cart first.
         </div>
       )}
 
+      {modelPreview && (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[3] -translate-x-1/2 rounded-full border border-[rgba(255,100,180,0.3)] bg-[rgba(20,0,25,0.8)] px-4 py-1.5 font-[family-name:var(--font-josefin)] text-[0.6rem] tracking-[0.14em] text-[rgba(255,176,212,0.85)] backdrop-blur-sm">
+          drag to orbit · scroll to zoom · whole-bear GLB preview
+        </div>
+      )}
+
       {/* ── Transform controls for the selected part ── */}
-      {selectedPart && (
+      {!modelPreview && selectedPart && (
         <div className="absolute bottom-4 left-1/2 z-[4] flex w-[min(92vw,340px)] -translate-x-1/2 flex-col gap-2 rounded-lg border border-[rgba(255,100,180,0.35)] bg-[rgba(20,0,25,0.92)] p-3 backdrop-blur-md">
           <div className="font-[family-name:var(--font-josefin)] text-[0.62rem] font-light tracking-[0.12em] text-[#FFB0D4]">
             {selectedPart.catV2 ?? CAT_LABEL[selectedPart.cat]} · <span className="text-[#FFE0F0]">{selectedPart.name}</span>
